@@ -20,6 +20,7 @@ lest.
 - [Actions](../../actions) erlauben Euch Continuous Integration (CI) und automatisiertes Testen für jeden Pull Request und jedes Release einzurichten.
 
 
+Hinweis: Dieses Repository (MedicalAnnotationFramework_SoSe2026) ist Euer Arbeitsbereich für das SoSe 2026. Das ursprüngliche Repository MedicalAnnotationFramework wird nicht von Euch verändert und dient nur als Referenz.
 
 # All-Purpose Labeling Tool
 
@@ -85,7 +86,7 @@ This repository includes a submodule. Therefore, it can be either cloned using:
 
 Linux:
 ```bash
-git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework.git
+git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework_SoSe2026.git
 cd MedicalAnnotationFramework
 mkdir venv
 python -m venv ./venv --system-site-packages
