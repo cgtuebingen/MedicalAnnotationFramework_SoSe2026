@@ -13,7 +13,7 @@ lest.
 
 - [Pull Requests](../../pulls) sind spezielle Issues, die dazu verwendet werden, um Code Reviews durchzuführen.
 
-- In [Projects](../../projects) könnt Ihr Euch ein Sprint Board anlegen, um die nächste Iteration zu planen und Euren Fortschritt nachzuvollziehen.
+- In [Projects](../../projects) könnt Ihr Euch ein Sprint Board anlegen, um die nächste Iteration zu planen und Euren Fortschritt nachzuvollziehen. 
 
 - Das [Wiki](../../wiki)  kann genutzt werden, um zum Beispiel weitere inhaltliche Anforderungen zu erfassen, die Definition-of-Done zu dokumentieren oder Protokolle und Entscheidungen des Teams festzuhalten.
 
