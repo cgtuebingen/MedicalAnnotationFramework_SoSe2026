@@ -1,3 +1,28 @@
+
+# Willkommen zum Teamprojekt!
+
+In diesem Github Repository wird ein großer Teil Eurer Arbeit stattfinden.
+Bitte stellt sicher, dass Ihr
+
+>  [Anforderungen im Teamprojekt](COURSE-DESCRIPTION.md)
+
+lest.
+
+## GitHub Tour
+
+- In [Issues](../../issues) könnt Ihr entdeckte Fehler (Bugs), User Stories und andere Tickets festhalten, damit ihr nicht vergesst diese zu bearbeiten.
+
+- [Pull Requests](../../pulls) sind spezielle Issues, die dazu verwendet werden, um Code Reviews durchzuführen.
+
+- In [Projects](../../projects) könnt Ihr Euch ein Sprint Board anlegen, um die nächste Iteration zu planen und Euren Fortschritt nachzuvollziehen. 
+
+- Das [Wiki](../../wiki)  kann genutzt werden, um zum Beispiel weitere inhaltliche Anforderungen zu erfassen, die Definition-of-Done zu dokumentieren oder Protokolle und Entscheidungen des Teams festzuhalten.
+
+- [Actions](../../actions) erlauben Euch Continuous Integration (CI) und automatisiertes Testen für jeden Pull Request und jedes Release einzurichten.
+
+
+
+
 ## Description
 The All-Purpose Labeling Tool is a framework designed to offer simple and easy-to-use annotation possibilities for medical images. 
 The underlying code is designed in a way that it can be integrated into a machine learning pipeline. 
