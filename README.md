@@ -85,8 +85,8 @@ This repository includes a submodule. Therefore, it can be either cloned using:
 
 Linux:
 ```bash
-git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework.git
-cd MedicalAnnotationFramework
+git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework_SoSe2026.git
+cd MedicalAnnotationFramework_SoSe2026
 mkdir venv
 python -m venv ./venv --system-site-packages
 source venv/bin/activate
@@ -95,8 +95,8 @@ python download_openslide.py
 ```
 Windows:
 ```bash
-git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework.git
-cd MedicalAnnotationFramework
+git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework_SoSe2026.git
+cd MedicalAnnotationFramework_SoSe2026
 mkdir .venv
 python -m venv ./.venv --system-site-packages
 venv/Scripts/activate
@@ -118,8 +118,8 @@ pyinstaller taplt.spec  # creates and puts the executable in ./dist
 ## Installation with Conda
 
 ```bash
-git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework.git
-cd MedicalAnnotationFramework
+git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework_SoSe2026.git
+cd MedicalAnnotationFramework_SoSe2026
 conda create -n taplt python=3.10
 conda activate taplt
 pip install .  # add -e to use the cloned repository as the source for the package
