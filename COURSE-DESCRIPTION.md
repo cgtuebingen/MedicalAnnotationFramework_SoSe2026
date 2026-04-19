@@ -1,6 +1,10 @@
-# Anforderungen im Teamprojekt
-In diesem Dokument beschreiben wir, was wir von Euch als TeilnehmerInnen des Teamprojektes erwarten.
-Dieses Dokument ist aus der Sicht der universitären Betreuung (der TutorInnen / BetreuerInnen) geschrieben.
+## Projektziel
+
+Ziel des Projekts ist es, ein bestehendes Annotations-Tool für medizinische 
+Bilder (Whole Slide Images) weiterzuentwickeln — stabiler, benutzerfreundlicher 
+und funktionsreicher zu machen. Ihr verbessert die Benutzeroberfläche, behebt 
+bekannte Fehler und fügt neue Features hinzu.
+
 
 ## Selbstorganisation
 
@@ -11,7 +15,9 @@ Ihr habt die gemeinschaftliche Verantwortung dafür, dass das Projekt ein Erfolg
 D.h. Ihr trefft gemeinschaftlich Entscheidungen (z.B. was den Entwicklungsprozess betrifft).
 Ihr habt aber auch Individualverantwortung: Aufgaben selbstständig zu bearbeiten, zu lernen und zu präsentieren.
 
-## Anforderungen an das Produkt
+
+## Zusammenarbeit mit der Betreuung
+
 Ihr seid dafür verantwortlich die Anforderungen an das Produkt im Gespräch mit uns und evtl. anderen Beteiligten selbst zu ermitteln. Anforderungen können anfangs unklar sein und sich evtl. im Verlauf ändern.
 
 **Wichtig**: das "Produkt" hier ist sowohl eine ausführbare Datei, als auch der Source Code in entsprechender Qualität.
@@ -20,7 +26,7 @@ Euer Ziel ist es den Wert des Produktes für den Kunden (d.h. "uns", die univ. B
 
 ## Anforderungen an den Entwicklungsprozess
 Die organisatorischen Rahmenbedingungen sind wie folgt.
-Alle zwei Wochen findet ein Treffen aller Beteiligten statt (1,5-2h).
+Alle zwei Wochen findet ein Treffen aller Beteiligten statt.
 Dieses Treffen ist grob in drei Teile geteilt:
 
 #### 1. Review (30min)
@@ -35,6 +41,8 @@ Dieses Treffen ist grob in drei Teile geteilt:
 #### 3. Planning (30-45min)
 - ihr plant, was die nächsten zwei Wochen entwickelt werden soll
 - ihr legt ein konkretes Entwicklungsziel fest
+
+
 
 ### Was ist dem Team überlassen?
 Das obige regelmäßige Treffen, sowie ein paar technische Anforderungen (unten) sind vorgegeben.
@@ -80,3 +88,42 @@ Abhängig vom Projekt kann das heißen, im Rahmen des Code Reviews muss eventuel
 - ...
 
 Code Reviews sollen als Kommentare auf GitHub nachvollziehbar dokumentiert werden.
+
+## Dokumentation
+
+Das Team ist verpflichtet, folgendes zu dokumentieren — wo (Wiki, Discord, etc.) 
+ist dem Team überlassen, solange es für alle zugänglich ist:
+
+- **Definition of Done** — was bedeutet "fertig" für dieses Team?
+- **Meeting-Protokolle** — nach jedem Meeting: was wurde besprochen, 
+  welche Entscheidungen wurden getroffen, wer macht was als nächstes?
+- **Aufgabenverteilung** — wer ist für welchen Teil des Projekts zuständig?
+
+Eine Vorlage dafür findet ihr im [Wiki](https://github.com/cgtuebingen/MedicalAnnotationFramework_SoSe2026/wiki).
+
+
+## Projektaufgaben (Anhaltspunkte)
+
+Die folgenden Punkte sind Anhaltspunkte — keine starre Pflichtliste. 
+Priorität hat was das Tool stabiler und benutzbarer macht.
+
+### Annotation Tools (Kern des Tools)
+- Polygon-Tool aktualisieren: Linksklick fügt einen Punkt hinzu (#51)
+- Punkt-Annotation Tool hinzufügen (#50)
+- Annotations-Interface mit Tools aus dem ImageViewer; 
+  den gesamten Annotations-Ablauf in-image überarbeiten
+
+### UI & Interaction
+- Toolbar und Icons neu gestalten (#53)
+- Canvas-Bewegung begrenzen, sodass der Nutzer nicht über die 
+  Ränder des Slides hinaus scrollen kann
+- Zoom-Logik verallgemeinern, um verschiedene Downsampling-Faktoren 
+  zu unterstützen
+- Den Nutzer über die aktuelle Vergrößerungsstufe informieren
+- Annotations ausgerichtet halten — Koordinaten relativ zur 
+  aktiven Ebene skalieren
+- Allgemein alles glätten und verbessern
+
+### Erweiterung (Low Priority — nur wenn Zeit bleibt)
+- Gen-Expression über einem WSI visualisieren
+- Integration von KI-Modellen (Segmenter, WSI- oder Tile-Klassifikator)
