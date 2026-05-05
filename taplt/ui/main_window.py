@@ -64,6 +64,7 @@ class LabelingMainWindow(QMainWindow):
 
         self.welcome_screen = WelcomeScreen()
         self.file_display = CenterDisplayWidget()
+        self.file_display.hide_button.setVisible(False)
 
         # default widget when no images exist in the project
         self.no_files = QLabel()
@@ -114,22 +115,16 @@ class LabelingMainWindow(QMainWindow):
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
 
-        #self.toolBar = Toolbar(self)
-        #self.addToolBar(Qt.ToolBarArea.LeftToolBarArea, self.toolBar)
-        #self.toolBar.init_margins()
-
-        # Attach the toolbar to the canvas as an overlay
         self.toolBar = Toolbar(self.center_frame)
         self.toolBar.show()
         self.toolBar.raise_()
-        self.position_toolbar()
 
         # Toolbar setup actions for images, videos and whole slides
         self.toolBar.init_actions('image', self.define_img_actions())
         self.toolBar.init_actions('slide', self.define_wsi_actions())
         self.toolBar.init_actions('video', self.define_video_actions())
         self.file_display.modalitySwitched.connect(self.toolBar.switch_modality)
-
+        
         # Show tooltip while drawing
         self.file_display.sDrawingTooltip.connect(self.set_tool_tip)
 
@@ -238,13 +233,21 @@ class LabelingMainWindow(QMainWindow):
     def hide_toolbar(self):
         """Legacy hook: Toolbar toggling is now handled inside the Toolbar itself."""
         self.toolBar.toggle_button.click()
-        #"""hides or shows the toolbar"""
-        #if self.toolBar.isHidden():
-            #self.toolBar.setHidden(False)
-            #self.file_display.hide_button.setIcon(get_icon("prev"))
-        #else:
-            #self.toolBar.setHidden(True)
-            #self.file_display.hide_button.setIcon(get_icon("next"))
+
+    def _position_toolbar(self):
+        """Position the toolbar overlay at the left side, vertically centered."""
+        if not hasattr(self, "toolBar") or self.toolBar is None:
+            return
+
+        margin = 12
+        x = margin
+        y = max(margin, (self.center_frame.height() - self.toolBar.height()) // 2)
+        self.toolBar.move(x, y)
+        self.toolBar.raise_()
+
+    def resizeEvent(self, event):
+        super(LabelingMainWindow, self).resizeEvent(event)
+        self._position_toolbar()
 
     def import_file(self, existing_patients: list):
         """executes a dialog to let the user enter all information regarding file import"""
@@ -351,6 +354,9 @@ class LabelingMainWindow(QMainWindow):
             self.polygons.update_polygons(current_labels)
         else:
             self.set_no_files_screen(True)
+
+        self.toolBar.adjustSize()
+        self._position_toolbar()
 
     def define_img_actions(self):
         actions = (Action(self,
@@ -481,22 +487,3 @@ class LabelingMainWindow(QMainWindow):
                    )
         actions = list(actions)
         return actions
-    
-    def position_toolbar(self):
-        """Positions the toolbar as an overlay on the center frame"""
-        
-        toolbar_size = self.toolBar.sizeHint()
-        canvas = self.center_frame
-
-        margin = 12 # Distance from the left edge of the canvas
-        
-        x = margin
-        y = (canvas.height() - toolbar_size.height()) // 2
-        
-        self.toolBar.move(int(x), int(y))
-        self.toolBar.raise_()
-
-    def resizeEvent(self, event):
-        """Repositions the toolbar when the window is resized"""
-        super().resizeEvent(event)
-        self.position_toolbar()
