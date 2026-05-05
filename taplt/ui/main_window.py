@@ -114,9 +114,15 @@ class LabelingMainWindow(QMainWindow):
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
 
-        self.toolBar = Toolbar(self)
-        self.addToolBar(Qt.ToolBarArea.LeftToolBarArea, self.toolBar)
-        self.toolBar.init_margins()
+        #self.toolBar = Toolbar(self)
+        #self.addToolBar(Qt.ToolBarArea.LeftToolBarArea, self.toolBar)
+        #self.toolBar.init_margins()
+
+        # Attach the toolbar to the canvas as an overlay
+        self.toolBar = Toolbar(self.center_frame)
+        self.toolBar.show()
+        self.toolBar.raise_()
+        self.position_toolbar()
 
         # Toolbar setup actions for images, videos and whole slides
         self.toolBar.init_actions('image', self.define_img_actions())
@@ -230,13 +236,15 @@ class LabelingMainWindow(QMainWindow):
             self.sRequestUpdate.emit(new_img_idx)
 
     def hide_toolbar(self):
-        """hides or shows the toolbar"""
-        if self.toolBar.isHidden():
-            self.toolBar.setHidden(False)
-            self.file_display.hide_button.setIcon(get_icon("prev"))
-        else:
-            self.toolBar.setHidden(True)
-            self.file_display.hide_button.setIcon(get_icon("next"))
+        """Legacy hook: Toolbar toggling is now handled inside the Toolbar itself."""
+        self.toolBar.toggle_button.click()
+        #"""hides or shows the toolbar"""
+        #if self.toolBar.isHidden():
+            #self.toolBar.setHidden(False)
+            #self.file_display.hide_button.setIcon(get_icon("prev"))
+        #else:
+            #self.toolBar.setHidden(True)
+            #self.file_display.hide_button.setIcon(get_icon("next"))
 
     def import_file(self, existing_patients: list):
         """executes a dialog to let the user enter all information regarding file import"""
@@ -473,3 +481,22 @@ class LabelingMainWindow(QMainWindow):
                    )
         actions = list(actions)
         return actions
+    
+    def position_toolbar(self):
+        """Positions the toolbar as an overlay on the center frame"""
+        
+        toolbar_size = self.toolBar.sizeHint()
+        canvas = self.center_frame
+
+        margin = 12 # Distance from the left edge of the canvas
+        
+        x = margin
+        y = (canvas.height() - toolbar_size.height()) // 2
+        
+        self.toolBar.move(int(x), int(y))
+        self.toolBar.raise_()
+
+    def resizeEvent(self, event):
+        """Repositions the toolbar when the window is resized"""
+        super().resizeEvent(event)
+        self.position_toolbar()

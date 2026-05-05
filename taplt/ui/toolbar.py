@@ -21,7 +21,8 @@ class Toolbar(QToolBar):
         self.setAutoFillBackground(False)
         self.setStyleSheet("background-color: rgb(186, 189, 182);")
         self.setMovable(False)
-        self.setAllowedAreas(Qt.ToolBarArea.LeftToolBarArea)
+        self.setFloatable(False)
+        self.setAllowedAreas(Qt.ToolBarArea.NoToolBarArea) 
         self.setOrientation(Qt.Orientation.Vertical)
         self.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
         self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
@@ -32,6 +33,14 @@ class Toolbar(QToolBar):
         self.button_group.buttonToggled.connect(self.exclusive_optional)
         self.modality_dict = {}
         self.current_modality = ""
+
+        self.toggle_button = QToolButton()
+        self.toggle_button.setText("⟨")
+        self.toggle_button.setCheckable(True)
+        self.toggle_button.setChecked(True)
+        self.toggle_button.clicked.connect(self._toggle_visibility)
+
+        self.addWidget(self.toggle_button)
 
     def disable_drawing(self, disable: bool):
         [btn.setDisabled(disable) for btn in self.button_group.buttons()]
@@ -114,7 +123,10 @@ class Toolbar(QToolBar):
                 RuntimeError("The modality does not exist/was not initialized yet.")
 
             self.current_modality = modality_name
-            self.addActions(self.modality_dict[modality_name])
+            self.addActions(self.modality_dict[modality_name])  
+
+            self.adjustSize()
+            self.setMinimumHeight(self.sizeHint().height())
 
     def clear_actions(self):
         """
@@ -126,3 +138,10 @@ class Toolbar(QToolBar):
             button.deleteLater()
 
         self.actionsDict.clear()
+    
+    def _toggle_visibility(self, checked: bool):
+        for w in self.findChildren(QToolButton):
+            if w is not self.toggle_button:
+                w.setVisible(checked)
+
+        self.toggle_button.setText("⟨" if checked else "⟩")
