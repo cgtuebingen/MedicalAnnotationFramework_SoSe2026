@@ -15,6 +15,7 @@ class ImageViewer(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.setMouseTracking(True)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         # Protected Item
         self._scaling_factor = 5 / 4
@@ -43,7 +44,7 @@ class ImageViewer(QGraphicsView):
             if self._enableZoomPan:
                 factor = self._scaling_factor if event.angleDelta().y() > 0 else 1/self._scaling_factor
                 self.scale(factor, factor)
-                self._emit_zoom()
+            self._emit_zoom()
 
     def keyPressEvent(self, event) -> None:
         if not self.b_isEmpty:
