@@ -12,9 +12,8 @@ import zipfile
 continueInstalling = True
 if(os.path.isdir("openslide")):
     userAnswer = input("There is already an Openslide installation. Do you want to continue and overwrite it? [Y/N]")
-    if not (userAnswer.lower in ["y","yes", "j", "ja"]):
+    if not (userAnswer.lower() in ["y","yes", "j", "ja"]):
         continueInstalling = False
-
 
 
 if continueInstalling:
