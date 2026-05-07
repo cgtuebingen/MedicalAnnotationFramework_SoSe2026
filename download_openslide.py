@@ -17,7 +17,7 @@ if response.status_code == 200:
 
     download_link = None
     for link in soup.find_all('a'):
-        if link.get('href') and "openslide-win64" in link.get('href'):
+        if link.get('href') and "windows-x64" in link.get('href'):
             download_link = link.get('href')
             break
 
