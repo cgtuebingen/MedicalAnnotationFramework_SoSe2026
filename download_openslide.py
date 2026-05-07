@@ -2,7 +2,6 @@
 This file is there to download the latest version of openslide from their website.
 Only works for windows currently
 """
-#TODO: Makes this work for other operating systems
 import os
 import platform
 import requests
