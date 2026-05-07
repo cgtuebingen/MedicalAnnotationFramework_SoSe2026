@@ -64,6 +64,19 @@ class LabelingMainWindow(QMainWindow):
 
         self.welcome_screen = WelcomeScreen()
         self.file_display = CenterDisplayWidget()
+        self.file_display.sZoomChanged.connect(self.update_zoom_label)
+
+        # zoom label on top right side
+        self.zoom_label = QLabel("100%", self.center_frame)
+        self.zoom_label.setStyleSheet("""
+            background-color: rgba(0,0,0,150);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            """)
+        self.zoom_label.adjustSize()
+        self.zoom_label.raise_()
+        self._reposition_zoom_label()
 
         # default widget when no images exist in the project
         self.no_files = QLabel()
@@ -113,6 +126,7 @@ class LabelingMainWindow(QMainWindow):
 
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
+
 
         self.toolBar = Toolbar(self)
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea, self.toolBar)
@@ -473,3 +487,17 @@ class LabelingMainWindow(QMainWindow):
                    )
         actions = list(actions)
         return actions
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._reposition_zoom_label()
+
+    def update_zoom_label(self, zoom_factor: float):
+        percent = int(zoom_factor * 100)
+        self.zoom_label.setText(f"{percent}%")
+        self.zoom_label.adjustSize()
+
+    def _reposition_zoom_label(self):
+        margin = 10
+        x = self.center_frame.width() - self.zoom_label.width() - margin
+        self.zoom_label.move(x, margin)
+        self.zoom_label.raise_()
