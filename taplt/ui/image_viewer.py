@@ -42,6 +42,11 @@ class ImageViewer(QGraphicsView):
             if self._enableZoomPan:
                 factor = self._scaling_factor if event.angleDelta().y() > 0 else 1/self._scaling_factor
                 self.scale(factor, factor)
+                # calculate zoom factor + send to CenterDisplayWidget
+                current_zoom = float(self.transform().m11())
+                parent = self.parentWidget()
+                if hasattr(parent, "sZoomChanged"):
+                    parent.sZoomChanged.emit(current_zoom)
 
     def keyPressEvent(self, event) -> None:
         if not self.b_isEmpty:

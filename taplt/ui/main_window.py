@@ -64,6 +64,8 @@ class LabelingMainWindow(QMainWindow):
 
         self.welcome_screen = WelcomeScreen()
         self.file_display = CenterDisplayWidget()
+        self.file_display.sZoomChanged.connect(self.update_zoom_label)
+
 
         # default widget when no images exist in the project
         self.no_files = QLabel()
@@ -113,6 +115,13 @@ class LabelingMainWindow(QMainWindow):
 
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
+
+        # zoom level widget
+        self.zoom_label = QLabel("100%")
+        self.zoom_label.setMinimumWidth(60)
+        self.zoom_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.statusbar.addPermanentWidget(self.zoom_label)
+
 
         self.toolBar = Toolbar(self)
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea, self.toolBar)
@@ -473,3 +482,8 @@ class LabelingMainWindow(QMainWindow):
                    )
         actions = list(actions)
         return actions
+    
+    def update_zoom_label(self, zoom_factor: float):
+        percent = int(zoom_factor * 100)
+        self.zoom_label.setText(f"{percent}%")
+

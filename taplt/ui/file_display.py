@@ -21,6 +21,8 @@ class CenterDisplayWidget(QWidget):
     sChangeFile = Signal(int)
     sDrawingTooltip = Signal(str)
     modalitySwitched = Signal(str)
+    sZoomChanged = Signal(float)
+
     CREATE, EDIT = 0, 1
 
     def __init__(self, *args):
@@ -103,6 +105,7 @@ class CenterDisplayWidget(QWidget):
         self.hide_button.raise_()
 
         self.switch_to_modality(filepath)
+        self.sZoomChanged.emit(1.0)
         self.patient_label.setText(patient)
         return labels
 
