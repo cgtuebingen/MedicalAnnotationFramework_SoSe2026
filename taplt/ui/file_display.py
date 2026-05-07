@@ -105,7 +105,7 @@ class CenterDisplayWidget(QWidget):
         self.hide_button.raise_()
 
         self.switch_to_modality(filepath)
-        self.sZoomChanged.emit(1.0)
+        # self.sZoomChanged.emit(1.0)
         self.patient_label.setText(patient)
         return labels
 
