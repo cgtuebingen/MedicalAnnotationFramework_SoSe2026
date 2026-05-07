@@ -35,6 +35,7 @@ class Shape(QGraphicsObject):
         RECTANGLE: str = 'rectangle'
         ELLIPSE: str = 'ellipse'
         CIRCLE: str = 'circle'
+        POINT: str = 'point'
 
     def __init__(self,
                  image_size: QSize,
@@ -305,7 +306,7 @@ class Shape(QGraphicsObject):
                 self._path.lineTo(_pnt)
 
     def init_shape(self):
-        if self.shape_type not in ['polygon', 'rectangle', 'ellipse', 'circle', 'trace', 'tempPolygon']:
+        if self.shape_type not in ['polygon', 'rectangle', 'ellipse', 'circle', 'trace', 'tempPolygon', 'point']:
             raise AttributeError("Unsupported Shape: " + str(self.shape_type))
         # Add additional points
         if self.shape_type in ['rectangle', 'ellipse', 'circle'] and len(self.vertices.vertices) == 2:
@@ -371,6 +372,9 @@ class Shape(QGraphicsObject):
             elif self.shape_type in ['tempTrace', 'tempPolygon']:
                 painter.drawPath(self._path)
                 self.vertices.paint(painter)
+
+            elif self.shape_type == 'point' and len(self.vertices.vertices) == 1:
+                painter.drawPoint(self.vertices.vertices)
 
             elif len(self.vertices.vertices) > 1:
                 if self.shape_type == "ellipse":
