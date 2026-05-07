@@ -160,11 +160,21 @@ def test_tab():
 
 def test_toolbar():
     window = QMainWindow()
-    window.setFixedSize(150, 800)
-    tb = Toolbar(window)
-    window.addToolBar(Qt.ToolBarArea.LeftToolBarArea, tb)
-    tb.init_margins()
-    tb.init_actions(window)
+    window.resize(400, 800)
+
+    center = QWidget()
+    center.setLayout(QVBoxLayout())
+    window.setCentralWidget(center)
+
+    tb = Toolbar(center)
+
+    mw = LabelingMainWindow()
+    tb.init_actions("image", mw.define_img_actions())
+    tb.switch_modality("image")
+
+    tb.move(10, 10)
+    tb.show()
+    
     window.show()
     app.exec()
 
@@ -189,5 +199,5 @@ if __name__ == "__main__":
     test_tree_widget()
     # test_dialog_new_label()
     # test_image_display()
-    # test_toolbar()
+    test_toolbar()
     # test_main_window()
