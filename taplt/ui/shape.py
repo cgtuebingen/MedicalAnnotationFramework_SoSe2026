@@ -167,8 +167,9 @@ class Shape(QGraphicsObject):
                         self.vertices.vertices.append(point)   # new preview point
                     self.update()
                 else:                                          
-                    self.vertices.vertices.append(self.check_out_of_bounds(event.scenePos()))
-                    self.update()
+                    if len(self.vertices.vertices) == 0:
+                        self.vertices.vertices.append(self.check_out_of_bounds(event.scenePos()))
+                        self.update()
             elif self.contains(event.pos()):
                 self.setSelected(True)
                 self.selected.emit()
