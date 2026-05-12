@@ -157,19 +157,19 @@ class Shape(QGraphicsObject):
         # TODO: Add a new tip that tells the user, that they can end the annotation by right clicking
         if event.button() == Qt.MouseButton.LeftButton:
             if self.mode == Shape.ShapeMode.CREATE:
-                if self.shape_type == "polygon":
-                    point = self.check_out_of_bounds(event.scenePos())  
+                point = self.check_out_of_bounds(event.scenePos())
+                if self.shape_type == "polygon":  
                     if len(self.vertices.vertices) == 0:
                         self.vertices.vertices.append(point)   # add the first point to the shape
                         self.vertices.vertices.append(point)   # preview of the next point
                     else:
                         self.vertices.vertices[-1] = point     # update the preview point to a real point of the current mouse position
                         self.vertices.vertices.append(point)   # new preview point
-                    self.update()
+                    
                 else:                                          
                     if len(self.vertices.vertices) == 0:
-                        self.vertices.vertices.append(self.check_out_of_bounds(event.scenePos()))
-                        self.update()
+                        self.vertices.vertices.append(point)
+                self.update()
             elif self.contains(event.pos()):
                 self.setSelected(True)
                 self.selected.emit()
