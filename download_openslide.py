@@ -62,7 +62,10 @@ if continueInstalling:
                         zip_ref.extractall("tmp_unpackfolder")
                 elif ending == "xz":
                     with tarfile.TarFile.xzopen(filename) as tar_ref:
-                        tar_ref.extractall("tmp_unpackfolder")
+                        if (platform.python_version()>="3.12"): # Filter works for py3.12+
+                            tar_ref.extractall("unpackfolder", filter = "tar")
+                        else:
+                            tar_ref.extractall("unpackfolder")
                 else:
                     raise Exception("Unknown compression format, can't unpack")
 
