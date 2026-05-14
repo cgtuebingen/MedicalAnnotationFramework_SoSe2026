@@ -8,6 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 import zipfile
 import tarfile
+import shutil
 
 # Check for Openslide Installation
 continueInstalling = True
@@ -58,16 +59,18 @@ if continueInstalling:
                 ending:str = filename.split(".")[-1]
                 if ending == "zip":
                     with zipfile.ZipFile(filename) as zip_ref:
-                        zip_ref.extractall()
+                        zip_ref.extractall("tmp_unpackfolder")
                 elif ending == "xz":
                     with tarfile.TarFile.xzopen(filename) as tar_ref:
-                        tar_ref.extractall()
+                        tar_ref.extractall("tmp_unpackfolder")
                 else:
                     raise Exception("Unknown compression format, can't unpack")
 
                 os.remove(filename)
-                if(os.path.isdir("openslide")): os.remove("openslide") # Overwrite existing installation
-                os.rename(filename[:-4], "openslide")
+                if(os.path.isdir("openslide")): shutil.rmtree("openslide", ignore_errors=True) # Remove existing installation
+                extractedFolder =  os.listdir("tmp_unpackfolder")[0]
+                os.rename("tmp_unpackfolder/"+extractedFolder, "openslide")
+                shutil.rmtree("tmp_unpackfolder", ignore_errors=True)
                 print(f"Openslide has been successfully downloaded.")
             else:
                 print("Failed to download OpenSlide library.")
