@@ -7,11 +7,12 @@ import platform
 import requests
 from bs4 import BeautifulSoup
 import zipfile
+import tarfile
 
 # Check for Openslide Installation
 continueInstalling = True
 if(os.path.isdir("openslide")):
-    userAnswer = input("There is already an Openslide installation. Do you want to continue and overwrite it? [Y/N]")
+    userAnswer = input("There is already an Openslide installation. Do you want to continue and overwrite it? [Y/N] ")
     if not (userAnswer.lower() in ["y","yes", "j", "ja"]):
         continueInstalling = False
 
@@ -54,8 +55,15 @@ if continueInstalling:
                 with open(filename, 'wb') as file:
                     file.write(response.content)
 
-                with zipfile.ZipFile(filename) as zip_ref:
-                    zip_ref.extractall()
+                ending:str = filename.split(".")[-1]
+                if ending == "zip":
+                    with zipfile.ZipFile(filename) as zip_ref:
+                        zip_ref.extractall()
+                elif ending == "xz":
+                    with tarfile.TarFile.xzopen(filename) as tar_ref:
+                        tar_ref.extractall()
+                else:
+                    raise Exception("Unknown compression format, can't unpack")
 
                 os.remove(filename)
                 if(os.path.isdir("openslide")): os.remove("openslide") # Overwrite existing installation
