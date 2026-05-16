@@ -57,23 +57,24 @@ if continueInstalling:
                     file.write(response.content)
 
                 ending:str = filename.split(".")[-1]
+                tmp_dir = "tmp_unpackfolder"
                 if ending == "zip":
                     with zipfile.ZipFile(filename) as zip_ref:
-                        zip_ref.extractall("tmp_unpackfolder")
+                        zip_ref.extractall(tmp_dir)
                 elif ending == "xz":
                     with tarfile.TarFile.xzopen(filename) as tar_ref:
                         if (platform.python_version()>="3.12"): # Filter works for py3.12+
-                            tar_ref.extractall("unpackfolder", filter = "tar")
+                            tar_ref.extractall(tmp_dir, filter = "tar")
                         else:
-                            tar_ref.extractall("unpackfolder")
+                            tar_ref.extractall(tmp_dir)
                 else:
                     raise Exception("Unknown compression format, can't unpack")
 
                 os.remove(filename)
                 if(os.path.isdir("openslide")): shutil.rmtree("openslide", ignore_errors=True) # Remove existing installation
-                extractedFolder =  os.listdir("tmp_unpackfolder")[0]
-                os.rename("tmp_unpackfolder/"+extractedFolder, "openslide")
-                shutil.rmtree("tmp_unpackfolder", ignore_errors=True)
+                extractedFolder =  os.listdir(tmp_dir)[0]
+                os.rename(tmp_dir+"/"+extractedFolder, "openslide")
+                shutil.rmtree(tmp_dir, ignore_errors=True)
                 print(f"Openslide has been successfully downloaded.")
             else:
                 print("Failed to download OpenSlide library.")
