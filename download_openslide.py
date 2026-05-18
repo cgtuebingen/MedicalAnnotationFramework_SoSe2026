@@ -2,42 +2,83 @@
 This file is there to download the latest version of openslide from their website.
 Only works for windows currently
 """
-#TODO: Makes this work for other operating systems
 import os
+import platform
 import requests
 from bs4 import BeautifulSoup
 import zipfile
+import tarfile
+import shutil
 
-openslide_url = "https://openslide.org/download/"
+# Check for Openslide Installation
+continueInstalling = True
+if(os.path.isdir("openslide")):
+    userAnswer = input("There is already an Openslide installation. Do you want to continue and overwrite it? [Y/N] ")
+    if not (userAnswer.lower() in ["y","yes", "j", "ja"]):
+        continueInstalling = False
 
-response = requests.get(openslide_url)
 
-if response.status_code == 200:
-    soup = BeautifulSoup(response.text, 'html.parser')
+if continueInstalling:
+    # Determine OS to choose openslide version
+    operatingSystem:str = ""
+    operatingSystemInformation = platform.uname()
+    if operatingSystemInformation.system == "Windows":
+        operatingSystem = "windows-x64" if "64" in operatingSystemInformation.machine else "win32"
+    elif operatingSystemInformation.system == "Linux":
+        if "x86_64" in operatingSystemInformation.machine: 
+            operatingSystem = "linux-x86_64"
+        elif "aarch64" in operatingSystemInformation.machine:
+            operatingSystem = "linux-aarch64"
+    elif operatingSystemInformation.system == "Darwin":
+        operatingSystem = "macos"
+    if operatingSystem == "":
+        raise Exception("Can't determin Operating System, therefore no openslide installation is possible")
 
-    download_link = None
-    for link in soup.find_all('a'):
-        if link.get('href') and "openslide-win64" in link.get('href'):
-            download_link = link.get('href')
-            break
+    # Download Openslide
+    openslide_url = "https://openslide.org/download/"
 
-    if download_link:
-        filename = os.path.basename(download_link)
+    response = requests.get(openslide_url)
 
-        response = requests.get(download_link)
-        if response.status_code == 200:
-            with open(filename, 'wb') as file:
-                file.write(response.content)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-            with zipfile.ZipFile(filename) as zip_ref:
-                zip_ref.extractall()
+        download_link = None
+        for link in soup.find_all('a'):
+            if link.get('href') and operatingSystem in link.get('href'):
+                download_link = link.get('href')
+                break
 
-            os.remove(filename)
-            os.rename(filename[:-4], "openslide")
-            print(f"Openslide has been successfully downloaded.")
+        if download_link:
+            filename = os.path.basename(download_link)
+
+            response = requests.get(download_link)
+            if response.status_code == 200:
+                with open(filename, 'wb') as file:
+                    file.write(response.content)
+
+                ending:str = filename.split(".")[-1]
+                tmp_dir = "tmp_unpackfolder"
+                if ending == "zip":
+                    with zipfile.ZipFile(filename) as zip_ref:
+                        zip_ref.extractall(tmp_dir)
+                elif ending == "xz":
+                    with tarfile.TarFile.xzopen(filename) as tar_ref:
+                        if (platform.python_version()>="3.12"): # Filter works for py3.12+
+                            tar_ref.extractall(tmp_dir, filter = "tar")
+                        else:
+                            tar_ref.extractall(tmp_dir)
+                else:
+                    raise Exception("Unknown compression format, can't unpack")
+
+                os.remove(filename)
+                if(os.path.isdir("openslide")): shutil.rmtree("openslide", ignore_errors=True) # Remove existing installation
+                extractedFolder =  os.listdir(tmp_dir)[0]
+                os.rename(tmp_dir+"/"+extractedFolder, "openslide")
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+                print(f"Openslide has been successfully downloaded.")
+            else:
+                print("Failed to download OpenSlide library.")
         else:
-            print("Failed to download OpenSlide library.")
+            print("Download link not found on the page.")
     else:
-        print("Download link not found on the page.")
-else:
-    print("Failed to access the OpenSlide download page.")
+        print("Failed to access the OpenSlide download page.")
