@@ -137,7 +137,7 @@ class Toolbar(QWidget):
             self.adjustSize()
             
             parent = self.parentWidget()
-            if parent and hasattr(parent, "position_toolbar"):
+            if parent and hasattr(parent, "_position_toolbar"):
                 parent._position_toolbar()
 
     def clear_actions(self):
@@ -164,6 +164,6 @@ class Toolbar(QWidget):
         self.adjustSize()
 
         parent = self.parentWidget()
-        if parent and hasattr(parent, "position_toolbar"):
+        if parent and hasattr(parent, "_position_toolbar"):
             parent._position_toolbar()
         

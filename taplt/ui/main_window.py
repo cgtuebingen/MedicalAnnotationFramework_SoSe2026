@@ -118,6 +118,9 @@ class LabelingMainWindow(QMainWindow):
         self.toolBar = Toolbar(self.center_frame)
         self.toolBar.show()
         self.toolBar.raise_()
+        self.toolBar.adjustSize()
+        self._position_toolbar()
+        QTimer.singleShot(0, self._position_toolbar)
 
         # Toolbar setup actions for images, videos and whole slides
         self.toolBar.init_actions('image', self.define_img_actions())
