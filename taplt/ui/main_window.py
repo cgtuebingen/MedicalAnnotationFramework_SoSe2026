@@ -401,7 +401,14 @@ class LabelingMainWindow(QMainWindow):
                                    self.file_display.annotations.set_type('rectangle')),
                           icon="square",
                           tip="Draw Rectangle",
-                          checkable=True))
+                          checkable=True),                 
+                    Action(self,
+                           "Draw\nPoint",
+                           lambda: (self.file_display.annotations.set_mode(1), 
+                                    self.file_display.annotations.set_type('point')),
+                            icon="point",
+                           tip="Draw Point",
+                           checkable=True))
         actions = list(actions)
         return actions
 
@@ -454,7 +461,15 @@ class LabelingMainWindow(QMainWindow):
                                    self.file_display.slide_viewer.setAnnotationMode(True)),
                           icon="square",
                           tip="Draw Rectangle",
-                          checkable=True))
+                          checkable=True),
+                    Action(self,
+                           "Draw\nPoint",
+                           lambda: (self.file_display.annotations.set_mode(1),
+                                    self.file_display.annotations.set_type('point'),
+                                    self.file_display.slide_viewer.setAnnotationMode(True)),
+                           icon="point",
+                           tip="Draw Point",
+                            checkable=True))
         actions = list(actions)
         return actions
 
