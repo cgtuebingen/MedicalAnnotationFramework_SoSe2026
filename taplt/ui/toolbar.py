@@ -11,6 +11,7 @@ class Toolbar(QWidget):
     sCreateNewProject = Signal(str, dict)
     sOpenProject = Signal(str)
     sRequestPatients = Signal()
+    sRequestUpdate = Signal()
 
     def __init__(self, parent):
         super(Toolbar, self).__init__(parent)
@@ -134,12 +135,7 @@ class Toolbar(QWidget):
             self.current_modality = modality_name
             self.addActions(self.modality_dict[modality_name])  
 
-            self.adjustSize()
-            
-            parent = self.parentWidget()
-            if parent and hasattr(parent, "position_toolbar"):
-                parent._position_toolbar()
-
+            QTimer.singleShot(0, self.sRequestUpdate.emit)
     def clear_actions(self):
         """
         This method removes all actions that are currently active, from the toolbar.
@@ -164,6 +160,6 @@ class Toolbar(QWidget):
         self.adjustSize()
 
         parent = self.parentWidget()
-        if parent and hasattr(parent, "position_toolbar"):
+        if parent and hasattr(parent, "_position_toolbar"):
             parent._position_toolbar()
         

@@ -118,6 +118,7 @@ class LabelingMainWindow(QMainWindow):
         self.toolBar = Toolbar(self.center_frame)
         self.toolBar.show()
         self.toolBar.raise_()
+        QTimer.singleShot(0, self.update_toolbar)
 
         # Toolbar setup actions for images, videos and whole slides
         self.toolBar.init_actions('image', self.define_img_actions())
@@ -150,6 +151,7 @@ class LabelingMainWindow(QMainWindow):
         self.macros.sEnableTools.connect(self.menubar.enable_tools)
         self.macros.sNewProject.connect(self.sCreateNewProject.emit)
         self.macros.sSetWelcomeScreen.connect(self.set_welcome_screen)
+        self.toolBar.sRequestUpdate.connect(self.update_toolbar)
 
         self.menubar.sRequestSave.connect(self.save_to_database)
         self.menubar.sNewProject.connect(self.new_project)
@@ -272,8 +274,8 @@ class LabelingMainWindow(QMainWindow):
             dlg.exec()
             if dlg.project_path:
                 database_path = dlg.project_path + Structure.DATABASE_DEFAULT_NAME
-                self.sCreateNewProject.emit(database_path, dlg.files)
                 self.set_welcome_screen(False)
+                self.sCreateNewProject.emit(database_path, dlg.files)
                 self.menubar.enable_tools()
 
     def open_project(self):
@@ -355,6 +357,8 @@ class LabelingMainWindow(QMainWindow):
         else:
             self.set_no_files_screen(True)
 
+        self.update_toolbar()
+    def update_toolbar(self):
         self.toolBar.adjustSize()
         self._position_toolbar()
 
