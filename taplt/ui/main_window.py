@@ -77,6 +77,7 @@ class LabelingMainWindow(QMainWindow):
         self.zoom_label.adjustSize()
         self.zoom_label.raise_()
         self._reposition_zoom_label()
+        self.file_display.hide_button.setVisible(False)
 
         # default widget when no images exist in the project
         self.no_files = QLabel()
@@ -128,16 +129,17 @@ class LabelingMainWindow(QMainWindow):
         self.setStatusBar(self.statusbar)
 
 
-        self.toolBar = Toolbar(self)
-        self.addToolBar(Qt.ToolBarArea.LeftToolBarArea, self.toolBar)
-        self.toolBar.init_margins()
+        self.toolBar = Toolbar(self.center_frame)
+        self.toolBar.show()
+        self.toolBar.raise_() 
+        QTimer.singleShot(0, self.update_toolbar)
 
         # Toolbar setup actions for images, videos and whole slides
         self.toolBar.init_actions('image', self.define_img_actions())
         self.toolBar.init_actions('slide', self.define_wsi_actions())
         self.toolBar.init_actions('video', self.define_video_actions())
         self.file_display.modalitySwitched.connect(self.toolBar.switch_modality)
-
+        
         # Show tooltip while drawing
         self.file_display.sDrawingTooltip.connect(self.set_tool_tip)
 
@@ -163,6 +165,7 @@ class LabelingMainWindow(QMainWindow):
         self.macros.sEnableTools.connect(self.menubar.enable_tools)
         self.macros.sNewProject.connect(self.sCreateNewProject.emit)
         self.macros.sSetWelcomeScreen.connect(self.set_welcome_screen)
+        self.toolBar.sRequestUpdate.connect(self.update_toolbar)
 
         self.menubar.sRequestSave.connect(self.save_to_database)
         self.menubar.sNewProject.connect(self.new_project)
@@ -244,13 +247,23 @@ class LabelingMainWindow(QMainWindow):
             self.sRequestUpdate.emit(new_img_idx)
 
     def hide_toolbar(self):
-        """hides or shows the toolbar"""
-        if self.toolBar.isHidden():
-            self.toolBar.setHidden(False)
-            self.file_display.hide_button.setIcon(get_icon("prev"))
-        else:
-            self.toolBar.setHidden(True)
-            self.file_display.hide_button.setIcon(get_icon("next"))
+        """Legacy hook: Toolbar toggling is now handled inside the Toolbar itself."""
+        self.toolBar.toggle_button.click()
+
+    def _position_toolbar(self):
+        """Position the toolbar overlay at the left side, vertically centered."""
+        if not hasattr(self, "toolBar") or self.toolBar is None:
+            return
+
+        margin = 12
+        x = margin
+        y = max(margin, (self.center_frame.height() - self.toolBar.height()) // 2)
+        self.toolBar.move(x, y)
+        self.toolBar.raise_()
+
+    def resizeEvent(self, event):
+        super(LabelingMainWindow, self).resizeEvent(event)
+        self._position_toolbar()
 
     def import_file(self, existing_patients: list):
         """executes a dialog to let the user enter all information regarding file import"""
@@ -275,8 +288,8 @@ class LabelingMainWindow(QMainWindow):
             dlg.exec()
             if dlg.project_path:
                 database_path = dlg.project_path + Structure.DATABASE_DEFAULT_NAME
-                self.sCreateNewProject.emit(database_path, dlg.files)
                 self.set_welcome_screen(False)
+                self.sCreateNewProject.emit(database_path, dlg.files)
                 self.menubar.enable_tools()
 
     def open_project(self):
@@ -357,6 +370,11 @@ class LabelingMainWindow(QMainWindow):
             self.polygons.update_polygons(current_labels)
         else:
             self.set_no_files_screen(True)
+
+        self.update_toolbar()
+    def update_toolbar(self):
+        self.toolBar.adjustSize()
+        self._position_toolbar()
 
     def define_img_actions(self):
         actions = (Action(self,

@@ -6,32 +6,44 @@ from typing import *
 from taplt.src.actions import Action
 
 
-class Toolbar(QToolBar):
+class Toolbar(QWidget):
 
     sCreateNewProject = Signal(str, dict)
     sOpenProject = Signal(str)
     sRequestPatients = Signal()
+    sRequestUpdate = Signal()
 
     def __init__(self, parent):
         super(Toolbar, self).__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+
+        self.setLayout(layout)
+        self.setFixedWidth(80)
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
         self.actionsDict = {}  # This is a lookup table to match the buttons to the numbers they got added
 
-        self.setMinimumSize(QSize(80, 100))
-        self.setMaximumSize(QSize(80, 16777215))
         self.setAutoFillBackground(False)
         self.setStyleSheet("background-color: rgb(186, 189, 182);")
-        self.setMovable(False)
-        self.setAllowedAreas(Qt.ToolBarArea.LeftToolBarArea)
-        self.setOrientation(Qt.Orientation.Vertical)
-        self.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
-        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.DefaultContextMenu)
         self.setObjectName("toolBar")
         self.button_group = QButtonGroup()
         self.button_group.setExclusive(True)
         self.button_group.buttonToggled.connect(self.exclusive_optional)
         self.modality_dict = {}
         self.current_modality = ""
+
+        self.toggle_button = QToolButton()
+        self.toggle_button.setText("⟨")
+        self.toggle_button.setCheckable(True)
+        self.toggle_button.setChecked(True)
+        self.toggle_button.clicked.connect(self._toggle_visibility)
+
+        self.layout().addWidget(self.toggle_button)
+
+        self._expanded_height = None
+        self.adjustSize()
 
     def disable_drawing(self, disable: bool):
         [btn.setDisabled(disable) for btn in self.button_group.buttons()]
@@ -41,21 +53,21 @@ class Toolbar(QToolBar):
 
     def addAction(self, action: Action):
         r"""Because I want a physical button in the toolbar, i need to create a widget"""
-        if isinstance(action, QWidgetAction):
-            return super(Toolbar, self).addAction(action)
+        """if isinstance(action, QWidgetAction):
+            return super(Toolbar, self).addAction(action)"""
         btn = QToolButton()
         # btn.setAutoRaise(True)
         btn.setCheckable(action.isCheckable())
         if action.isCheckable():
             self.button_group.addButton(btn)
         btn.setDefaultAction(action)
-        btn.setToolButtonStyle(self.toolButtonStyle())
+        btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         btn.setMinimumSize(80, 70)
         btn.setMaximumSize(80, 70)
-        self.addWidget(btn)
+        self.layout().addWidget(btn)
 
-        action_text = action.text().replace('\n', '')
-        self.actionsDict[action_text] = len(self.actionsDict)
+        """action_text = action.text().replace('\n', '')
+        self.actionsDict[action_text] = len(self.actionsDict)"""
 
     def addActions(self, actions: Iterable[Action]) -> None:
         for action in actions:
@@ -66,7 +78,7 @@ class Toolbar(QToolBar):
 
     def contextMenuEvent(self, event) -> None:
         if "DrawPolygon" in self.actionsDict:
-            if self.actionGeometry(self.actions()[self.actionsDict["DrawPolygon"]]).contains(event.pos()):
+            if self.layout().itemAt(self.actionsDict["DrawPolygon"]).widget().geometry().contains(event.pos()):
                 # TODO: raise own context menu with options for drawing a circle or a rectangle
                 pass
 
@@ -80,22 +92,29 @@ class Toolbar(QToolBar):
             raise AttributeError(f"Action '{action_str}' not available. Available actions are"
                                  f"\n{[act for act in self.actionsDict.keys()]}")
         else:
-            return self.widgetForAction(self.actions()[self.actionsDict[action_str]]).defaultAction()
+            return self.layout().itemAt(self.actionsDict[action_str]).widget().defaultAction()
 
     def get_widget_for_action(self, action_str: str):
         if action_str not in self.actionsDict:
             raise AttributeError(f"Action '{action_str}' not available. Available actions are"
                                  f"\n{[act for act in self.actionsDict.keys()]}")
         else:
-            return self.widgetForAction(self.actions()[self.actionsDict[action_str]])
+            return self.layout().itemAt(self.actionsDict[action_str]).widget()
 
     def init_margins(self):
-        """This function is necessary because the call to addToolBar in label_ui.py alters the alignment
-        for some reason. Therefore, this method will be called AFTER the toolbar is added to the main window"""
-        m = (0, 0, 0, 0)
-        self.setContentsMargins(*m)
-        self.layout().setSpacing(2)
-        self.layout().setContentsMargins(*m)
+        """No-op for overlay toolbar. Positioning is handled by the parent widget."""
+        pass
+
+    def set_overlay_position(self, parent_widget: QWidget, margin: int = 10):
+        """Position the toolbar as an overlay on the given parent widget."""
+        if parent_widget is None:
+            return
+
+        parent_rect = parent_widget.rect()
+        x = margin
+        y = max(margin, (parent_rect.height() - self.height()) // 2)
+        self.move(x, y)
+        self.raise_()
 
     def switch_modality(self, modality_name: str):
         """
@@ -114,8 +133,9 @@ class Toolbar(QToolBar):
                 RuntimeError("The modality does not exist/was not initialized yet.")
 
             self.current_modality = modality_name
-            self.addActions(self.modality_dict[modality_name])
+            self.addActions(self.modality_dict[modality_name])  
 
+            QTimer.singleShot(0, self.sRequestUpdate.emit)
     def clear_actions(self):
         """
         This method removes all actions that are currently active, from the toolbar.
@@ -126,3 +146,20 @@ class Toolbar(QToolBar):
             button.deleteLater()
 
         self.actionsDict.clear()
+    
+    def _toggle_visibility(self, checked: bool):
+        # Show/hide all tool buttons except the toggle itself
+        for i in range(1, self.layout().count()):
+            w = self.layout().itemAt(i).widget()
+            if w:
+                w.setVisible(checked)
+
+        # Adjust arrow direction
+        self.toggle_button.setText("⟨" if checked else "⟩")
+
+        self.adjustSize()
+
+        parent = self.parentWidget()
+        if parent and hasattr(parent, "_position_toolbar"):
+            parent._position_toolbar()
+        

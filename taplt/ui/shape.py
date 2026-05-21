@@ -35,6 +35,7 @@ class Shape(QGraphicsObject):
         RECTANGLE: str = 'rectangle'
         ELLIPSE: str = 'ellipse'
         CIRCLE: str = 'circle'
+        POINT: str = 'point'
 
     def __init__(self,
                  image_size: QSize,
@@ -114,16 +115,22 @@ class Shape(QGraphicsObject):
     @Slot(QGraphicsSceneMouseEvent)
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         if self.mode == Shape.ShapeMode.CREATE:
-            if len(self.vertices.vertices) > 0:
-                delta = self.vertices.vertices[-1] - event.scenePos()
+            # only update the position of the preview point if you want to create a polygon 
+            if self.shape_type == "polygon":
+                if len(self.vertices.vertices) > 0:
+                    self.vertices.vertices[-1] = self.check_out_of_bounds(event.scenePos())
+                    self.update()
             else:
-                delta = event.scenePos()
-            if math.sqrt(delta.x() ** 2 + delta.y() ** 2) > 3:
-                if self.shape_type in ["polygon", "tempTrace","trace"] or len(self.vertices.vertices) <= 1:
-                    self.vertices.vertices.append(self.check_out_of_bounds(event.scenePos()))
-                else:
-                    self.vertices.vertices[1] = self.check_out_of_bounds(event.scenePos())
-                self.update()
+                if len(self.vertices.vertices) > 0:
+                    delta = self.vertices.vertices[-1] - event.scenePos()
+                else: 
+                    delta = event.scenePos()
+                if math.sqrt(delta.x() ** 2 + delta.y() ** 2) > 3:
+                    if self.shape_type in ["tempTrace","trace"] or len(self.vertices.vertices) <= 1:
+                        self.vertices.vertices.append(self.check_out_of_bounds(event.scenePos()))
+                    else:
+                        self.vertices.vertices[1] = self.check_out_of_bounds(event.scenePos())
+                    self.update()
         
         super(Shape, self).mouseMoveEvent(event)
 
@@ -150,7 +157,19 @@ class Shape(QGraphicsObject):
         # TODO: Add a new tip that tells the user, that they can end the annotation by right clicking
         if event.button() == Qt.MouseButton.LeftButton:
             if self.mode == Shape.ShapeMode.CREATE:
-                pass
+                point = self.check_out_of_bounds(event.scenePos())
+                if self.shape_type == "polygon":  
+                    if len(self.vertices.vertices) == 0:
+                        self.vertices.vertices.append(point)   # add the first point to the shape
+                        self.vertices.vertices.append(point)   # preview of the next point
+                    else:
+                        self.vertices.vertices[-1] = point     # update the preview point to a real point of the current mouse position
+                        self.vertices.vertices.append(point)   # new preview point
+                    
+                else:                                          
+                    if len(self.vertices.vertices) == 0:
+                        self.vertices.vertices.append(point)
+                self.update()
             elif self.contains(event.pos()):
                 self.setSelected(True)
                 self.selected.emit()
@@ -158,13 +177,13 @@ class Shape(QGraphicsObject):
                 super(Shape, self).mousePressEvent(event)
             else:
                 event.ignore()
-            pass
-        elif self.mode == Shape.ShapeMode.CREATE and len(self.vertices) > 1:
-            self.ungrabMouse()
-            self.is_closed_path = True
+        elif event.button() == Qt.MouseButton.RightButton:
+            if self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1:
+                self.ungrabMouse()
+                self.is_closed_path = True
 
-            self.drawingDone.emit()
-            super(Shape, self).mousePressEvent(event)
+                self.drawingDone.emit()
+                super(Shape, self).mousePressEvent(event)
 
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
@@ -288,7 +307,7 @@ class Shape(QGraphicsObject):
                 self._path.lineTo(_pnt)
 
     def init_shape(self):
-        if self.shape_type not in ['polygon', 'rectangle', 'ellipse', 'circle', 'trace', 'tempPolygon']:
+        if self.shape_type not in ['polygon', 'rectangle', 'ellipse', 'circle', 'trace', 'tempPolygon', 'point']:
             raise AttributeError("Unsupported Shape: " + str(self.shape_type))
         # Add additional points
         if self.shape_type in ['rectangle', 'ellipse', 'circle'] and len(self.vertices.vertices) == 2:
@@ -354,6 +373,9 @@ class Shape(QGraphicsObject):
             elif self.shape_type in ['tempTrace', 'tempPolygon']:
                 painter.drawPath(self._path)
                 self.vertices.paint(painter)
+
+            elif self.shape_type == 'point' and len(self.vertices.vertices) == 1:
+                painter.drawPoint(self.vertices.vertices)
 
             elif len(self.vertices.vertices) > 1:
                 if self.shape_type == "ellipse":
