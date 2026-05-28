@@ -47,8 +47,5 @@ TAB_STYLESHEET = """ QTabWidget::pane {
                      }
                      """
 
-SETTING_STYLESHEET = """ QListWidget::item {
-                         color: black;
-                         background-color:transparent;
-                         }
+SETTING_STYLESHEET = """ QListWidget::item:hover:!active
                          """
