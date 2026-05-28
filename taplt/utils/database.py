@@ -86,12 +86,9 @@ class SQLiteDatabase(QObject):
 
     def __init__(self):
         super(SQLiteDatabase, self).__init__()
-        #self.connection = None
-        #self.cursor = None
         self.location = ""
         self.file_tables = FILE_TABLES
         self.is_initialized = False
-        #self.settings = None  # type: QSettings
         self.database_path = "none"
 
     def add_annotation(self, modality: int, file: int, patient: int, shape: bytes, label: int):
