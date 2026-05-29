@@ -38,7 +38,7 @@ TAB_STYLESHEET = """ QTabWidget::pane {
                      }
                      
                      QTabBar::tab:selected { 
-                     background: white; 
+                     background: rgb(240, 240, 240); 
                      border-left: 1px solid lightgray;
                      border-right: 1px solid lightgray; 
                      border-top: none;
