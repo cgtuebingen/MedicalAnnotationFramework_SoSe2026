@@ -67,7 +67,7 @@ class LabelingMainWindow(QMainWindow):
         self.file_display.sZoomChanged.connect(self.update_zoom_label)
 
         # zoom label on top right side
-        self.zoom_label = QLabel("100%", self.center_frame)
+        self.zoom_label = QLabel("100%", self.file_display)
         self.zoom_label.setStyleSheet("""
             background-color: rgba(0,0,0,150);
             color: white;
@@ -76,7 +76,6 @@ class LabelingMainWindow(QMainWindow):
             """)
         self.zoom_label.adjustSize()
         self.zoom_label.raise_()
-        self._reposition_zoom_label()
         self.file_display.hide_button.setVisible(False)
 
         # default widget when no images exist in the project
@@ -261,9 +260,6 @@ class LabelingMainWindow(QMainWindow):
         self.toolBar.move(x, y)
         self.toolBar.raise_()
 
-    def resizeEvent(self, event):
-        super(LabelingMainWindow, self).resizeEvent(event)
-        self._position_toolbar()
 
     def import_file(self, existing_patients: list):
         """executes a dialog to let the user enter all information regarding file import"""
@@ -349,6 +345,7 @@ class LabelingMainWindow(QMainWindow):
         """ either hides the default label or the image display"""
         self.file_display.setHidden(b)
         self.no_files.setHidden(not b)
+        self.zoom_label.setVisible(not b)
 
     def set_welcome_screen(self, b: bool):
         """sets or removes the welcome screen displayed when no project is opened"""
@@ -357,6 +354,7 @@ class LabelingMainWindow(QMainWindow):
         self.toolBar.setHidden(b)
         self.right_menu_widget.setHidden(b)
         self.welcome_screen.setHidden(not b)
+        self.zoom_label.setVisible(not b)
 
     def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list):
         """main updating function: all necessary information is passed to the main window"""
@@ -372,6 +370,9 @@ class LabelingMainWindow(QMainWindow):
             self.set_no_files_screen(True)
 
         self.update_toolbar()
+        QTimer.singleShot(50, self._reposition_zoom_label)
+        QTimer.singleShot(50, lambda: (self.zoom_label.setText("100%"), self.zoom_label.adjustSize()))
+        
     def update_toolbar(self):
         self.toolBar.adjustSize()
         self._position_toolbar()
@@ -507,6 +508,7 @@ class LabelingMainWindow(QMainWindow):
         return actions
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self._position_toolbar()
         self._reposition_zoom_label()
 
     def update_zoom_label(self, zoom_factor: float):
@@ -515,7 +517,9 @@ class LabelingMainWindow(QMainWindow):
         self.zoom_label.adjustSize()
 
     def _reposition_zoom_label(self):
+        if self.file_display.width() == 0:
+            return
         margin = 10
-        x = self.center_frame.width() - self.zoom_label.width() - margin
+        x = self.file_display.width() - self.zoom_label.width() - margin
         self.zoom_label.move(x, margin)
         self.zoom_label.raise_()
