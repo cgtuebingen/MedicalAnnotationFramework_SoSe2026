@@ -1,13 +1,12 @@
 import sys
 import pytest
-from PySide6.QtWidgets import QApplication, QGraphicsScene, QMainWindow, QWidget, QVBoxLayout, QLabel, QTabWidget, QGraphicsSceneMouseEvent
+from PySide6.QtWidgets import QApplication, QGraphicsScene, QGraphicsSceneMouseEvent
 from PySide6.QtCore import QSize, QPointF, QEvent
-from PySide6.QtGui import QMouseEvent
 from PySide6.QtGui import Qt
 from taplt.ui.shape import Shape
 
 
-app = QApplication(sys.argv)
+app = QApplication.instance() or QApplication(sys.argv)
 
 def make_mouse_event(pos: QPointF, button=Qt.MouseButton.LeftButton):
     event = QGraphicsSceneMouseEvent(QEvent.GraphicsSceneMousePress)
