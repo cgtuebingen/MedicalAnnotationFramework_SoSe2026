@@ -115,8 +115,10 @@ class Shape(QGraphicsObject):
     @Slot(QGraphicsSceneMouseEvent)
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         if self.mode == Shape.ShapeMode.CREATE:
+            if self.shape_type == "point":
+                pass
             # only update the position of the preview point if you want to create a polygon 
-            if self.shape_type == "polygon":
+            elif self.shape_type == "polygon":
                 if len(self.vertices.vertices) > 0:
                     self.vertices.vertices[-1] = self.check_out_of_bounds(event.scenePos())
                     self.update()
@@ -165,7 +167,14 @@ class Shape(QGraphicsObject):
                     else:
                         self.vertices.vertices[-1] = point     # update the preview point to a real point of the current mouse position
                         self.vertices.vertices.append(point)   # new preview point
-                    
+                #elif self.shape_type == "point":
+                 #   if len(self.vertices.vertices) == 0:
+                  #      self.vertices.vertices.append(self.check_out_of_bounds(event.scenePos()))
+                   #     self.update
+                    #    self.ungrabMouse
+                     #   self.is_closed_path = True
+                      #  self.drawingDone.emit() 
+                       # return     
                 else:                                          
                     if len(self.vertices.vertices) == 0:
                         self.vertices.vertices.append(point)
@@ -178,12 +187,12 @@ class Shape(QGraphicsObject):
             else:
                 event.ignore()
         elif event.button() == Qt.MouseButton.RightButton:
-            if self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1:
-                self.ungrabMouse()
-                self.is_closed_path = True
+            if self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) >= 1:
+                    self.ungrabMouse()
+                    self.is_closed_path = True
 
-                self.drawingDone.emit()
-                super(Shape, self).mousePressEvent(event)
+                    self.drawingDone.emit()
+                    super(Shape, self).mousePressEvent(event)
 
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
@@ -375,7 +384,7 @@ class Shape(QGraphicsObject):
                 self.vertices.paint(painter)
 
             elif self.shape_type == 'point' and len(self.vertices.vertices) == 1:
-                painter.drawPoint(self.vertices.vertices)
+                painter.drawPoint(self.vertices.vertices[0])
 
             elif len(self.vertices.vertices) > 1:
                 if self.shape_type == "ellipse":
