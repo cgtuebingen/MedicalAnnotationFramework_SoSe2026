@@ -169,7 +169,14 @@ class Shape(QGraphicsObject):
                 else:                                          
                     if len(self.vertices.vertices) == 0:
                         self.vertices.vertices.append(point)
-                self.update()
+                    else:
+                        self.vertices.vertices.append(point)
+                        self.ungrabMouse() 
+                        self.is_closed_path = True
+                        self.drawingDone.emit()
+                        event.accept()
+                        return 
+                self.update()   
             elif self.contains(event.pos()):
                 self.setSelected(True)
                 self.selected.emit()
@@ -178,7 +185,7 @@ class Shape(QGraphicsObject):
             else:
                 event.ignore()
         elif event.button() == Qt.MouseButton.RightButton:
-            if self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1:
+            if self.shape_type == "polygon" and self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1:
                 self.ungrabMouse()
                 self.is_closed_path = True
 
@@ -310,7 +317,7 @@ class Shape(QGraphicsObject):
         if self.shape_type not in ['polygon', 'rectangle', 'ellipse', 'circle', 'trace', 'tempPolygon', 'point']:
             raise AttributeError("Unsupported Shape: " + str(self.shape_type))
         # Add additional points
-        if self.shape_type in ['rectangle', 'ellipse', 'circle'] and len(self.vertices.vertices) == 2:
+        if self.shape_type in ['rectangle', 'ellipse'] and len(self.vertices.vertices) == 2:
             self.vertices.complete_poly()
 
         # Generate path for the temporary Shapes
@@ -382,10 +389,10 @@ class Shape(QGraphicsObject):
                     painter.drawEllipse(QRectF(self.vertices.vertices[0], self.vertices.vertices[len(self.vertices.vertices)//2]))
                 elif self.shape_type == "circle":
                     center = self.vertices.vertices[0]
-                    if len(self.vertices.vertices) == 2:
-                        second_point = self.vertices.vertices[1]
-                    elif len(self.vertices.vertices) == 4:
-                        second_point = self.vertices.vertices[2]
+                    if len(self.vertices.vertices) < 2:
+                        return
+                    center = self.vertices.vertices[0]
+                    second_point = self.vertices.vertices[1]
                     radius = math.sqrt(
                         (center.x() - second_point.x()) ** 2 + 
                         (center.y() - second_point.y()) ** 2
