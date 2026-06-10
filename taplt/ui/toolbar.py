@@ -45,6 +45,7 @@ class Toolbar(QWidget):
 
         self._dragging = False
         self._drag_start_pos = QPoint()
+        self._drag_start_global = QPoint()
         self._moved_by_user = False
 
         self.layout().addWidget(self.toggle_button)
@@ -242,15 +243,21 @@ class Toolbar(QWidget):
             # Start dragging on mouse press
             if event.type() == QEvent.Type.MouseButtonPress:
                 self._dragging = True
-                self._drag_start_pos = event.globalPosition().toPoint() - self.pos()
-                return False  # wichtig: Event weitergeben
+                self._drag_start_global = event.globalPosition().toPoint()
+                self._drag_start_pos =  self.pos() # event.globalPosition().toPoint() - self.pos()
+                self._moved_by_user = False
+                return True 
 
             # Dragging
             elif event.type() == QEvent.Type.MouseMove:
                 if self._dragging:
-                    new_pos = event.globalPosition().toPoint() - self._drag_start_pos
+                    delta = event.globalPosition().toPoint() - self._drag_start_global
 
-                    self._moved_by_user = True
+                    # Only consider it a user move if the mouse has moved a certain distance to avoid accidental drags
+                    if delta.manhattanLength() > QApplication.startDragDistance():
+                        self._moved_by_user = True
+                    
+                    new_pos = self._drag_start_pos + delta
 
                     parent = self.parentWidget()
                     if parent:
@@ -264,11 +271,15 @@ class Toolbar(QWidget):
                     else:
                         self.move(new_pos)
 
-                return False
+                return True
 
             # Stop dragging on mouse release
             elif event.type() == QEvent.Type.MouseButtonRelease:
                 self._dragging = False
-                return False
+
+                if not self._moved_by_user:
+                        self.toggle_button.click()
+
+                return True
 
         return super().eventFilter(obj, event)
