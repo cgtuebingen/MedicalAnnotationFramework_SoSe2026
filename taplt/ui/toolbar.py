@@ -39,6 +39,13 @@ class Toolbar(QWidget):
         self.toggle_button.setCheckable(True)
         self.toggle_button.setChecked(True)
         self.toggle_button.clicked.connect(self._toggle_visibility)
+        self.toggle_button.setCursor(Qt.CursorShape.SizeAllCursor)
+        self.toggle_button.setMouseTracking(True)
+        self.toggle_button.installEventFilter(self)
+
+        self._dragging = False
+        self._drag_start_pos = QPoint()
+        self._moved_by_user = False
 
         self.layout().addWidget(self.toggle_button)
 
@@ -136,6 +143,7 @@ class Toolbar(QWidget):
             self.addActions(self.modality_dict[modality_name])  
 
             QTimer.singleShot(0, self.sRequestUpdate.emit)
+
     def clear_actions(self):
         """
         This method removes all actions that are currently active, from the toolbar.
@@ -160,6 +168,107 @@ class Toolbar(QWidget):
         self.adjustSize()
 
         parent = self.parentWidget()
-        if parent and hasattr(parent, "_position_toolbar"):
+        if parent and hasattr(parent, "_position_toolbar") and not self._moved_by_user:
             parent._position_toolbar()
+        else:
+            self._clamp_to_parent()
         
+    def mousePressEvent(self, event):
+        """ 
+        This method is responsible for handling the mouse press event on the toolbar. 
+        It starts dragging when the left mouse button is pressed.
+        """
+        if event.button() == Qt.LeftButton:
+            # Don't drag if clicking on a tool button (other than toggle button)
+            if not self.toggle_button.geometry().contains(event.pos()):
+                return
+            
+            self._dragging = True
+            self._drag_start_pos = event.globalPosition().toPoint() - self.pos()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        """
+        This method is responsible for handling the mouse move event on the toolbar. 
+        It moves the toolbar if dragging is active and ensures that the toolbar stays within the bounds of its parent widget.
+        """
+        if self._dragging:
+            new_pos = event.globalPosition().toPoint() - self._drag_start_pos
+            
+            self._moved_by_user = True
+
+            parent = self.parentWidget()
+            if parent:
+                parent_rect = parent.rect()
+                toolbar_rect = self.rect()
+
+                # Ensure the toolbar stays within the parent's bounds
+                new_x = max(0, min(new_pos.x(), parent_rect.width() - toolbar_rect.width()))
+                new_y = max(0, min(new_pos.y(), parent_rect.height() - toolbar_rect.height()))
+
+                self.move(new_x, new_y)
+            else:   
+                self.move(new_pos)
+
+            event.accept()
+        
+    def mouseReleaseEvent(self, event):
+        """
+        This method is responsible for handling the mouse release event on the toolbar.
+        It stops dragging when the left mouse button is released.
+        """
+        if event.button() == Qt.LeftButton:
+            self._dragging = False
+            event.accept()
+
+    def _clamp_to_parent(self):
+        """Ensure the toolbar stays within the bounds of its parent widget."""
+        parent = self.parentWidget()
+        if parent:
+            parent_rect = parent.rect()
+            toolbar_rect = self.rect()
+            current_pos = self.pos()
+
+            new_x = max(0, min(current_pos.x(), parent_rect.width() - toolbar_rect.width()))
+            new_y = max(0, min(current_pos.y(), parent_rect.height() - toolbar_rect.height()))
+
+            self.move(new_x, new_y)
+
+    def eventFilter(self, obj, event):
+        """
+        This method is responsible for filtering events on the toggle button to allow dragging the toolbar by clicking and dragging the toggle button.
+        """
+        if obj == self.toggle_button:
+            # Start dragging on mouse press
+            if event.type() == QEvent.Type.MouseButtonPress:
+                self._dragging = True
+                self._drag_start_pos = event.globalPosition().toPoint() - self.pos()
+                return False  # wichtig: Event weitergeben
+
+            # Dragging
+            elif event.type() == QEvent.Type.MouseMove:
+                if self._dragging:
+                    new_pos = event.globalPosition().toPoint() - self._drag_start_pos
+
+                    self._moved_by_user = True
+
+                    parent = self.parentWidget()
+                    if parent:
+                        max_x = parent.width() - self.width()
+                        max_y = parent.height() - self.height()
+
+                        x = max(0, min(new_pos.x(), max_x))
+                        y = max(0, min(new_pos.y(), max_y))
+
+                        self.move(x, y)
+                    else:
+                        self.move(new_pos)
+
+                return False
+
+            # Stop dragging on mouse release
+            elif event.type() == QEvent.Type.MouseButtonRelease:
+                self._dragging = False
+                return False
+
+        return super().eventFilter(obj, event)
