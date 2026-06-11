@@ -180,8 +180,6 @@ class FileViewingWidget(QWidget):
 
 
 class SettingList(QListWidget):
-    sSettingChanged = Signal(str, object)
-
     def __init__(self, settings):
         super(SettingList, self).__init__()
         self.setSpacing(5)
@@ -195,11 +193,13 @@ class SettingList(QListWidget):
                 item.setToolTip(hint)
                 self.addItem(item)
             else:
-                self._add_slider_item(name, value, hint)
+                self._add_slider_item(name, float(value), hint)
 
     def _add_slider_item(self, name: str, value: float, hint: str):
         item = QListWidgetItem()
         item.setToolTip(hint)
+        item.setData(Qt.ItemDataRole.UserRole, name)        # marks this as a "slider" setting + stores its name
+        item.setData(Qt.ItemDataRole.UserRole + 1, value)   # current value
 
         widget = QWidget()
         layout = QHBoxLayout(widget)
@@ -216,7 +216,7 @@ class SettingList(QListWidget):
         def on_change(v):
             scaled = v / 10
             value_label.setText(f"{scaled:.2f}")
-            self.sSettingChanged.emit(name, scaled)
+            item.setData(Qt.ItemDataRole.UserRole + 1, scaled)
 
         slider.valueChanged.connect(on_change)
 

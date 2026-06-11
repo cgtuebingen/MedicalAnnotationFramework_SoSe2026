@@ -24,7 +24,6 @@ class ImageViewer(QGraphicsView):
         self._max_scale = 100000.0
 
     def set_zoom_speed(self, factor: float):
-        """ updates the scaling factor used for zooming """
         self._scaling_factor = factor
 
     def fitInView(self, rect: QRectF, mode: Qt.AspectRatioMode = Qt.AspectRatioMode.IgnoreAspectRatio) -> None:
@@ -49,9 +48,7 @@ class ImageViewer(QGraphicsView):
             if self._enableZoomPan:
                 factor = self._scaling_factor if event.angleDelta().y() > 0 else 1/self._scaling_factor
                 self.scale(factor, factor)
-
                 current_scale = self.transform().m11()
-
                 if current_scale < self._min_scale:
                     correction = self._min_scale / current_scale
                     self.scale(correction, correction)
