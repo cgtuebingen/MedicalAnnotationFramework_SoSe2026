@@ -23,6 +23,10 @@ class ImageViewer(QGraphicsView):
         self._min_scale = 1.0
         self._max_scale = 100000.0
 
+    def set_zoom_speed(self, factor: float):
+        """ updates the scaling factor used for zooming """
+        self._scaling_factor = factor
+
     def fitInView(self, rect: QRectF, mode: Qt.AspectRatioMode = Qt.AspectRatioMode.IgnoreAspectRatio) -> None:
         if not rect.isNull():
             self.setSceneRect(rect)
