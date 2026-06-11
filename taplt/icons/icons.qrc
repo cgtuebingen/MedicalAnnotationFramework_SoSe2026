@@ -1,0 +1,30 @@
+<RCC>
+  <qresource prefix="/icons">
+    <file>checked.png</file>
+    <file>circle.png</file>
+    <file>close.png</file>
+    <file>ellipse.png</file>
+    <file>fast-forward.png</file>
+    <file>image.png</file>
+    <file>import.png</file>
+    <file>mouse.png</file>
+    <file>new.png</file>
+    <file>next.png</file>
+    <file>open.png</file>
+    <file>outline.png</file>
+    <file>pause.png</file>
+    <file>pen.png</file>
+    <file>play.png</file>
+    <file>plus.png</file>
+    <file>point.png</file>
+    <file>polygon.png</file>
+    <file>prev.png</file>
+    <file>quit.png</file>
+    <file>rewind.png</file>
+    <file>save.png</file>
+    <file>select.png</file>
+    <file>settings.png</file>
+    <file>square.png</file>
+    <file>trash.png</file>
+  </qresource>
+</RCC>
