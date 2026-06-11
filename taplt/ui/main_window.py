@@ -127,11 +127,10 @@ class LabelingMainWindow(QMainWindow):
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
 
-
         self.toolBar = Toolbar(self.center_frame)
         self.toolBar.show()
         self.toolBar.raise_() 
-        QTimer.singleShot(0, self.update_toolbar)
+        QTimer.singleShot(0, self._position_toolbar)
 
         # Toolbar setup actions for images, videos and whole slides
         self.toolBar.init_actions('image', self.define_img_actions())
@@ -375,7 +374,10 @@ class LabelingMainWindow(QMainWindow):
         
     def update_toolbar(self):
         self.toolBar.adjustSize()
-        self._position_toolbar()
+        
+        if not self.toolBar._moved_by_user:
+            self._position_toolbar()
+
 
     def define_img_actions(self):
         actions = (Action(self,
@@ -521,9 +523,15 @@ class LabelingMainWindow(QMainWindow):
                    )
         actions = list(actions)
         return actions
+    
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        self._position_toolbar()
+
+        if not self.toolBar._moved_by_user:
+            self._position_toolbar()
+        else: 
+            self.toolBar._clamp_to_parent()
+        
         self._reposition_zoom_label()
 
     def update_zoom_label(self, zoom_factor: float):
