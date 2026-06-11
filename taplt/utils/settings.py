@@ -12,7 +12,11 @@ s3 = ("Display patient name",
       False,
       "Shows the patient name at the bottom of the image")
 
-SETTINGS = [s1, s2, s3]
+s4 = ("Zoom Speed",
+      1.0,
+      "Let's you change the zoom speed")
+
+SETTINGS = [s1, s2, s3, s4]
 
 
 def get_tooltip(setting: str):

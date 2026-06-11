@@ -438,9 +438,15 @@ class SettingDialog(QDialog):
     def save_settings(self):
         for idx in range(self.preferences.count()):
             item = self.preferences.item(idx)
-            key = item.text()
-            value = True if item.checkState() == Qt.CheckState.Checked else False
-            self.settings.append((key, value))
+            name = item.data(Qt.ItemDataRole.UserRole)
+            if name is not None:
+                # slider-based setting (e.g. Zoom speed)
+                value = item.data(Qt.ItemDataRole.UserRole + 1)
+                self.settings.append((name, value))
+            else:
+                key = item.text()
+                value = True if item.checkState() == Qt.CheckState.Checked else False
+                self.settings.append((key, value))
         self.close()
 
 

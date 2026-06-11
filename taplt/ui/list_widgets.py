@@ -180,13 +180,51 @@ class FileViewingWidget(QWidget):
 
 
 class SettingList(QListWidget):
+    sSettingChanged = Signal(str, object)
+
     def __init__(self, settings):
         super(SettingList, self).__init__()
         self.setSpacing(5)
         self.setStyleSheet(SETTING_STYLESHEET)
         for setting in settings:
-            item = QListWidgetItem(setting[0])
-            checked = Qt.CheckState.Checked if setting[1] else Qt.CheckState.Unchecked
-            item.setCheckState(checked)
-            item.setToolTip(setting[2])
-            self.addItem(item)
+            name, value, hint = setting
+            if isinstance(value, bool):
+                item = QListWidgetItem(name)
+                checked = Qt.CheckState.Checked if value else Qt.CheckState.Unchecked
+                item.setCheckState(checked)
+                item.setToolTip(hint)
+                self.addItem(item)
+            else:
+                self._add_slider_item(name, value, hint)
+
+    def _add_slider_item(self, name: str, value: float, hint: str):
+        item = QListWidgetItem()
+        item.setToolTip(hint)
+
+        widget = QWidget()
+        layout = QHBoxLayout(widget)
+        layout.setContentsMargins(5, 0, 5, 0)
+
+        label = QLabel(name)
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setRange(10, 30)  # maps to scaling factor 1.00 - 3.00
+        slider.setValue(int(value * 10))
+
+        value_label = QLabel(f"{value:.2f}")
+        value_label.setFixedWidth(35)
+
+        def on_change(v):
+            scaled = v / 10
+            value_label.setText(f"{scaled:.2f}")
+            self.sSettingChanged.emit(name, scaled)
+
+        slider.valueChanged.connect(on_change)
+
+        layout.addWidget(label)
+        layout.addWidget(slider)
+        layout.addWidget(value_label)
+        widget.setLayout(layout)
+
+        item.setSizeHint(widget.sizeHint())
+        self.addItem(item)
+        self.setItemWidget(item, widget)

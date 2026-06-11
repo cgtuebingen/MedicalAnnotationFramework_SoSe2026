@@ -187,6 +187,8 @@ class LabelingMainWindow(QMainWindow):
                 self.sRequestUpdate.emit(self.img_idx)
             elif setting[0] == "Display patient name":
                 self.file_display.patient_label.setVisible(setting[1])
+            elif setting[0] == "Zoom speed":
+                self.file_display.image_viewer.set_zoom_speed(float(setting[1]))
         self.sUpdateSettings.emit(settings)
 
     def change_detected(self, change: int):
