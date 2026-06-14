@@ -60,8 +60,11 @@ class AnnotationGroup(QGraphicsObject):
             self.temp_shape.drawingDone.connect(self.set_drawing_to_false)
             if self.shapeType == Shape.ShapeType.POINT:
                 self.sToolTip.emit("Click to place the point")
-            else:
+           
+            elif self.shapeType == Shape.ShapeType.POLYGON:
                 self.sToolTip.emit("Press right click to end the annotation.")
+            else:
+                self.sToolTip.emit("Press left click a 2nd time to end the annotation.")       
             self.temp_shape.grabMouse()
         else:
             pass

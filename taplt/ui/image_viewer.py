@@ -15,6 +15,7 @@ class ImageViewer(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.setMouseTracking(True)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         # Protected Item
         self._scaling_factor = 5 / 4
@@ -31,6 +32,7 @@ class ImageViewer(QGraphicsView):
                 factor = min(view_rect.width() / scene_rect.width(),
                              view_rect.height() / scene_rect.height())
                 self.scale(factor, factor)
+                self._emit_zoom()
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         bounds = self.scene().itemsBoundingRect()
@@ -42,6 +44,7 @@ class ImageViewer(QGraphicsView):
             if self._enableZoomPan:
                 factor = self._scaling_factor if event.angleDelta().y() > 0 else 1/self._scaling_factor
                 self.scale(factor, factor)
+            self._emit_zoom()
 
     def keyPressEvent(self, event) -> None:
         if not self.b_isEmpty:
@@ -58,3 +61,10 @@ class ImageViewer(QGraphicsView):
             if event.key() == Qt.Key.Key_Control:
                 self._enableZoomPan = False
                 self.setDragMode(QGraphicsView.DragMode.NoDrag)
+
+
+    def _emit_zoom(self):
+        current_zoom = float(self.transform().m11())
+        parent = self.parentWidget()
+        if hasattr(parent, "sZoomChanged"):
+            parent.sZoomChanged.emit(current_zoom)

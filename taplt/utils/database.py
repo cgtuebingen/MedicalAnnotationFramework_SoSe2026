@@ -86,12 +86,9 @@ class SQLiteDatabase(QObject):
 
     def __init__(self):
         super(SQLiteDatabase, self).__init__()
-        self.connection = None
-        self.cursor = None
         self.location = ""
         self.file_tables = FILE_TABLES
         self.is_initialized = False
-        self.settings = None  # type: QSettings
         self.database_path = "none"
 
     def add_annotation(self, modality: int, file: int, patient: int, shape: bytes, label: int):
@@ -328,10 +325,10 @@ class SQLiteDatabase(QObject):
             self.create_initial_tables()
             for file, patient in files.items():
                 self.add_file(file, patient)
-            self.settings = QSettings(self.location + '/settings', QSettings.Format.NativeFormat)
+            self.settings = QSettings(self.location + '/settings.ini', QSettings.Format.IniFormat)
             self.update_settings(SETTINGS)
         else:
-            self.settings = QSettings(self.location + '/settings', QSettings.Format.NativeFormat)
+            self.settings = QSettings(self.location + '/settings.ini', QSettings.Format.IniFormat)
 
         with self.connection:
             self.cursor.execute(f"PRAGMA foreign_keys = ON;")
