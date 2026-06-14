@@ -186,12 +186,12 @@ class Shape(QGraphicsObject):
             else:
                 event.ignore()
         elif event.button() == Qt.MouseButton.RightButton:
-            if self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) >= 1:
-                    self.ungrabMouse()
-                    self.is_closed_path = True
+            if self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1:
+                self.ungrabMouse()
+                self.is_closed_path = True
 
-                    self.drawingDone.emit()
-                    super(Shape, self).mousePressEvent(event)
+                self.drawingDone.emit()
+                super(Shape, self).mousePressEvent(event)
 
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
