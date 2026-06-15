@@ -21,8 +21,8 @@ class Shape(QGraphicsObject):
     mode_changed = Signal(int)
     deleted = Signal()
     drawingDone = Signal()
-    sChange = Signal(int)
     sIllegalCircleOnBorder = Signal()
+    labelRequested = Signal()
 
     @dataclass
     class ShapeMode:
@@ -205,6 +205,7 @@ class Shape(QGraphicsObject):
                         self.vertices.vertices.append(point)
                         self.ungrabMouse() 
                         self.is_closed_path = True
+                        self.set_mode(Shape.ShapeMode.FIXED)
                         self.drawingDone.emit()
                         event.accept()
                         return 
@@ -220,17 +221,17 @@ class Shape(QGraphicsObject):
             if self.shape_type == "polygon" and self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1:
                 self.ungrabMouse()
                 self.is_closed_path = True
-
+                self.set_mode(Shape.ShapeMode.FIXED)
                 self.drawingDone.emit()
-                super(Shape, self).mousePressEvent(event)
+                event.accept()
 
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
-        if self.contains(event.pos()):
-            self.set_mode(Shape.ShapeMode.EDIT)
-        else:
-            event.ignore()
-        super(Shape, self).mouseDoubleClickEvent(event)
+        if self.mode == Shape.ShapeMode.FIXED or self.mode == Shape.ShapeMode.EDIT:
+            self.labelRequested.emit()
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
 
     @Slot(QGraphicsSceneMouseEvent)
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
