@@ -13,6 +13,7 @@ from taplt.utils.stylesheets import TAB_STYLESHEET, SETTING_STYLESHEET
 class FileList(QListWidget):
     """ a list widget subclass to make use of context menu"""
     sDeleteFile = Signal(str)
+    sFilesDropped = Signal(list)
 
     def __init__(self):
         super(FileList, self).__init__()
@@ -20,6 +21,7 @@ class FileList(QListWidget):
         self.setContentsMargins(0, 0, 0, 0)
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setItemAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.setAcceptDrops(True)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         item = self.itemAt(event.pos())
@@ -29,6 +31,30 @@ class FileList(QListWidget):
             action.triggered.connect(lambda: self.sDeleteFile.emit(item.text()))
             menu.addAction(action)
             menu.exec(event.globalPos())
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        files = []
+
+        for url in event.mimeData().urls():
+            if url.isLocalFile():
+                files.append(url.toLocalFile())
+
+        if files:
+            self.sFilesDropped.emit(files)
+
+        event.acceptProposedAction()
 
 
 class LabelList(QListWidget):
@@ -87,6 +113,7 @@ class FileViewingWidget(QWidget):
     itemClicked = Signal(QListWidgetItem)
     sRequestFileChange = Signal(int)
     sDeleteFile = Signal(str)
+    sFilesDropped = Signal(list)
 
     def __init__(self):
         super(FileViewingWidget, self).__init__()
@@ -133,14 +160,20 @@ class FileViewingWidget(QWidget):
         self.tab.addTab(self.wsi_list, 'WSI')
         self.layout().addWidget(self.tab)
 
+        self.image_list.sFilesDropped.connect(self.sFilesDropped.emit)
+        self.wsi_list.sFilesDropped.connect(self.sFilesDropped.emit)
         self.image_list.itemClicked.connect(self.file_selected)
+        self.wsi_list.itemClicked.connect(self.file_selected)
         self.image_list.sDeleteFile.connect(self.sDeleteFile.emit)
+        self.wsi_list.sDeleteFile.connect(self.sDeleteFile.emit)
         self.search_field.textChanged.connect(self.search_text_changed)
 
     def file_selected(self):
         """gets the index of the selected file and emits a signal"""
-        idx2 = self.image_list.currentRow()
-        self.sRequestFileChange.emit(idx2)
+        current_list = self.tab.currentWidget()
+        if isinstance(current_list, FileList):
+            idx2 = current_list.currentRow()
+            self.sRequestFileChange.emit(idx2)
 
     def get_img_idx(self, filename: str) -> int:
         """ searches through the ListWidget and returns the index of the item with the filename / -1 if not found"""

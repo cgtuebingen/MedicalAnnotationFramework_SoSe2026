@@ -320,24 +320,29 @@ class ProjectHandlerDialog(QDialog):
         self.patients.append(dlg.result)
 
         if dlg.result:
-            filepath, _ = QFileDialog.getOpenFileName(self,
-                                                      caption="Select File",
-                                                      directory=str(Path.home()),
-                                                      options=QFileDialog.Option.DontUseNativeDialog)
+            # --- FIX: Instantiate QFileDialog explicitly like your working database selector ---
+            dialog = QFileDialog(self)
+            dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+            dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+            dialog.setDirectory(str(Path.home()))
+            dialog.setLabelText(QFileDialog.DialogLabel.Accept, "Select File")
 
-            # only care about the filename itself (not regarding its path), to make it easier to handle
-            filename = os.path.basename(filepath)
-            if self.exists(filename):
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Icon.Information)
-                msg.setText("The file\n{}\nalready exists.\nOverwrite?".format(filename))
-                msg.setStandardButtons(QMessageBox.ButtonRole.Ok | QMessageBox.ButtonRole.Cancel)
-                msg.accepted.connect(lambda: self.overwrite(filepath, filename, dlg.result))
-                msg.exec()
-            elif filename:
-                # TODO: Implement possibility to add several files at once
-                self.files[filepath] = dlg.result
-                self.added_files.addItem(QListWidgetItem(filename))
+            if dialog.exec():
+                filepath = dialog.selectedFiles()[0]
+
+                # only care about the filename itself (not regarding its path), to make it easier to handle
+                filename = os.path.basename(filepath)
+                if self.exists(filename):
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Icon.Information)
+                    msg.setText("The file\n{}\nalready exists.\nOverwrite?".format(filename))
+                    msg.setStandardButtons(QMessageBox.ButtonRole.Ok | QMessageBox.ButtonRole.Cancel)
+                    msg.accepted.connect(lambda: self.overwrite(filepath, filename, dlg.result))
+                    msg.exec()
+                elif filename:
+                    # TODO: Implement possibility to add several files at once
+                    self.files[filepath] = dlg.result
+                    self.added_files.addItem(QListWidgetItem(filename))
 
     def check_path(self):
         """ this function verifies/rejects the project path which the user entered in the LineEdit"""
