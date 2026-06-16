@@ -72,6 +72,17 @@ class Toolbar(QWidget):
         btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         btn.setMinimumSize(80, 70)
         btn.setMaximumSize(80, 70)
+        btn.setIconSize(QSize(24, 24))
+        btn.setStyleSheet("""
+            QToolButton {
+                qproperty-iconSize: 24px 24px;
+            }
+            QToolButton::icon {
+                margin-top: 16px;
+            }
+                          
+        """)
+
         self.layout().addWidget(btn)
 
         """action_text = action.text().replace('\n', '')
