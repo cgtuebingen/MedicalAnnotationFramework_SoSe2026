@@ -63,6 +63,12 @@ class CenterDisplayWidget(QWidget):
         # self.layout.addWidget(self.slide_wrapper)
         self.layout.addWidget(self.patient_label)
 
+        self.image_viewer.sEnterPressed.connect(self.on_enter_pressed)
+    
+        def on_enter_pressed(self):
+            if self.annotations.pending_shapes:          
+                self.annotations.set_pending_label()
+
         self.slide_viewer.sZoomChanged.connect(self.sZoomChanged)
 
     def mousePressEvent(self, event: QMouseEvent):
