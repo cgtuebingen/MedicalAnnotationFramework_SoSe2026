@@ -22,6 +22,7 @@ class Shape(QGraphicsObject):
     deleted = Signal()
     drawingDone = Signal()
     sChange = Signal(int)
+    sIllegalCircleOnBorder = Signal()
 
     @dataclass
     class ShapeMode:
@@ -144,7 +145,9 @@ class Shape(QGraphicsObject):
     def circle_out_of_bounds_clip(self, center_pos: QPointF, new_point:QPointF):
         max_radius = self.circle_max_radius(center_pos)
         if max_radius == 0:
-            raise Exception("Circle placed on border")
+            self.ungrabMouse()
+            self.sIllegalCircleOnBorder.emit()
+            return center_pos
         x = center_pos.x()
         y = center_pos.y()
         x_delta = new_point.x() - x
