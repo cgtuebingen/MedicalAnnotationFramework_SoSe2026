@@ -115,10 +115,11 @@ class Shape(QGraphicsObject):
     @Slot(QGraphicsSceneMouseEvent)
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         if self.mode == Shape.ShapeMode.CREATE:
+            checked_pos = self.check_out_of_bounds(event.scenePos())
             # only update the position of the preview point if you want to create a polygon 
             if self.shape_type == "polygon":
                 if len(self.vertices.vertices) > 0:
-                    self.vertices.vertices[-1] = self.check_out_of_bounds(event.scenePos())
+                    self.vertices.vertices[-1] = checked_pos
                     self.update()
             else:
                 if len(self.vertices.vertices) > 0:
@@ -127,13 +128,33 @@ class Shape(QGraphicsObject):
                     delta = event.scenePos()
                 if math.sqrt(delta.x() ** 2 + delta.y() ** 2) > 3:
                     if self.shape_type in ["tempTrace","trace"] or len(self.vertices.vertices) <= 1:
-                        self.vertices.vertices.append(self.check_out_of_bounds(event.scenePos()))
+                        self.vertices.vertices.append(checked_pos)
                     else:
-                        self.vertices.vertices[1] = self.check_out_of_bounds(event.scenePos())
+                        if self.shape_type == "circle":
+                            self.vertices.vertices[1] = self.circle_out_of_bounds_clip(self.vertices.vertices[0], checked_pos)
+                        else:
+                            self.vertices.vertices[1] = checked_pos
                     self.update()
         
         super(Shape, self).mouseMoveEvent(event)
-
+    def circle_max_radius(self, center_pos:QPointF):
+        x_min = min(center_pos.x(), self.image_size.width() -center_pos.x())
+        y_min = min(center_pos.y(), self.image_size.height()-center_pos.y())
+        return min(x_min, y_min)
+    def circle_out_of_bounds_clip(self, center_pos: QPointF, new_point:QPointF):
+        max_radius = self.circle_max_radius(center_pos)
+        if max_radius == 0:
+            raise Exception("Circle placed on border")
+        x = center_pos.x()
+        y = center_pos.y()
+        x_delta = new_point.x() - x
+        y_delta = new_point.y() - y
+        requested_radius = math.sqrt(x_delta*x_delta+y_delta*y_delta)
+        ratio = requested_radius/max_radius 
+        if ratio>1:
+            x_delta /= ratio
+            y_delta /= ratio
+        return QPointF(x+x_delta, y+y_delta)
     def check_out_of_bounds(self, pos: QPointF):
         scene_pos = np.clip(np.array((pos.x(), pos.y())),
                             np.array((0, 0)),
