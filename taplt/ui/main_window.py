@@ -33,6 +33,7 @@ class LabelingMainWindow(QMainWindow):
     sDeleteFile = Signal(str, int)
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
+    sRequestImportInfo = Signal()
 
     @dataclass
     class Changes:
@@ -181,23 +182,25 @@ class LabelingMainWindow(QMainWindow):
     def import_dropped_files(self, filepaths: list):
         if not filepaths:
             return
+        self._pending_dropped_files = filepaths
+        self.sRequestImportInfo.emit()
 
-        # TODO: Pass actual existing patients if you track them in the main window
-        dlg = SelectPatientDialog([])
-        dlg.exec()
-        patient = dlg.result
-
-        if not patient:
+    def import_file_with_patients(self, existing_patients: list):
+        filepaths = getattr(self, '_pending_dropped_files', [])
+        if not filepaths:
             return
 
-        if not self.check_for_changes():
+        dlg = SelectPatientDialog(existing_patients)
+        dlg.exec()
+        patient = dlg.result
+        if not patient or not self.check_for_changes():
             return
 
         for filepath in filepaths:
             self.sAddFile.emit(filepath, patient)
 
+        self._pending_dropped_files = []
         self.sRequestUpdate.emit(self.img_idx)
-        QTimer.singleShot(100, lambda: self.sRequestUpdate.emit(self.img_idx))
 
     def apply_settings(self, settings: list):
         """applies the settings"""

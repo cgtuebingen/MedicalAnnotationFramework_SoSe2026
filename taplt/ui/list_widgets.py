@@ -33,18 +33,27 @@ class FileList(QListWidget):
             menu.exec(event.globalPos())
 
     def dragEnterEvent(self, event):
+        # Check if the object being dragged contains file paths/URLs
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
         else:
             event.ignore()
 
     def dragMoveEvent(self, event):
+        """
+        Triggered continuously while a drag operation moves over the widget.
+        Ensures the proposed drop action remains accepted as long as the data is valid.
+        """
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
         else:
             event.ignore()
 
     def dropEvent(self, event):
+        """
+        Triggered when the dragged items are released (dropped) onto the widget.
+        Extracts local file paths and emits a signal with the list of files.
+        """
         files = []
 
         for url in event.mimeData().urls():
