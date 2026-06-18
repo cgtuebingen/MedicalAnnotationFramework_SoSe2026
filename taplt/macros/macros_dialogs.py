@@ -3,7 +3,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFont
 
 from pathlib import Path
-from taplt.utils.stylesheets import BUTTON_STYLESHEET
+from taplt.utils.stylesheets import BUTTON_STYLESHEET, BASE_FONT_SIZE
 
 
 class ExampleProjectDialog(QDialog):
@@ -16,10 +16,10 @@ class ExampleProjectDialog(QDialog):
         self.info = QLabel()
         self.info.setWordWrap(True)
         self.info.setText("Click the button below to create a new project with some example images \n")
-        self.info.setFont(QFont("Helvetica", 15, QFont.Weight.Bold))
+        self.info.setFont(QFont("Helvetica", BASE_FONT_SIZE + 2, QFont.Weight.Bold))
 
         self.button = QPushButton("Show me an example project")
-        self.button.setStyleSheet(BUTTON_STYLESHEET)
+        self.button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE + 1))
         self.button.clicked.connect(self.finish)
 
         self.layout().addWidget(self.info)
@@ -72,7 +72,7 @@ class PreviewDatabaseDialog(QDialog):
                 self.table.setItem(i, j, item)
 
         self.button = QPushButton("Close")
-        self.button.setStyleSheet(BUTTON_STYLESHEET)
+        self.button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE + 1))
         self.button.setFixedSize(80, 60)
         self.button.pressed.connect(self.close)
 

@@ -11,7 +11,7 @@ from taplt.ui.shape import Shape
 from taplt.ui.toolbar import Toolbar
 from taplt.src.main_logic import MainLogic
 from taplt.utils.qt import colormap_rgb
-from taplt.utils.stylesheets import TAB_STYLESHEET
+from taplt.utils.stylesheets import TAB_STYLESHEET, BASE_FONT_SIZE
 
 
 COLORS, _ = colormap_rgb(25)
@@ -153,7 +153,7 @@ def test_tab():
     w2.layout().addWidget(QLabel("Widget 2"))
     tab.addTab(w1, 'First')
     tab.addTab(w2, 'Second')
-    tab.setStyleSheet(TAB_STYLESHEET)
+    tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=BASE_FONT_SIZE))
     tab.show()
     app.exec()
 

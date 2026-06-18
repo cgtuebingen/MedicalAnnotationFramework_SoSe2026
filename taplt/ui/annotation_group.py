@@ -61,7 +61,13 @@ class AnnotationGroup(QGraphicsObject):
             if self.shapeType == Shape.ShapeType.POINT:
                 self.sToolTip.emit("Click to place the point")
            
-            elif self.shapeType == Shape.ShapeType.POLYGON:
+           
+            if self.shapeType == "circle":
+                def delete():
+                    self.set_drawing_to_false()
+                    self.remove_shapes([self.temp_shape])
+                self.temp_shape.sIllegalCircleOnBorder.connect(delete)
+            if self.shapeType == Shape.ShapeType.POLYGON:
                 self.sToolTip.emit("Press right click to end the annotation.")
             else:
                 self.sToolTip.emit("Press left click a 2nd time to end the annotation.")       
