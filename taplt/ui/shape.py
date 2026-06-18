@@ -21,6 +21,7 @@ class Shape(QGraphicsObject):
     mode_changed = Signal(int)
     deleted = Signal()
     drawingDone = Signal()
+    sChange = Signal(int)
     sIllegalCircleOnBorder = Signal()
     labelRequested = Signal()
 
