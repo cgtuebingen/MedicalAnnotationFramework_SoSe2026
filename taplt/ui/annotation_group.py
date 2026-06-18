@@ -58,6 +58,11 @@ class AnnotationGroup(QGraphicsObject):
                                     color=self.draw_new_color)
             self.add_shapes(self.temp_shape)
             self.temp_shape.drawingDone.connect(self.set_drawing_to_false)
+            if self.shapeType == "circle":
+                def delete():
+                    self.set_drawing_to_false()
+                    self.remove_shapes([self.temp_shape])
+                self.temp_shape.sIllegalCircleOnBorder.connect(delete)
             if self.shapeType == Shape.ShapeType.POLYGON:
                 self.sToolTip.emit("Press right click to end the annotation.")
             else:
