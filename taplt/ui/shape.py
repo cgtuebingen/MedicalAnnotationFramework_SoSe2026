@@ -120,7 +120,7 @@ class Shape(QGraphicsObject):
                 return 
             checked_pos = self.check_out_of_bounds(event.scenePos())
             # only update the position of the preview point if you want to create a polygon 
-            elif self.shape_type == "polygon":
+            if self.shape_type == "polygon":
                 if len(self.vertices.vertices) > 0:
                     self.vertices.vertices[-1] = checked_pos
                     self.update()
