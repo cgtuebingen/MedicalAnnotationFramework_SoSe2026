@@ -15,7 +15,7 @@ def make_mouse_event(pos: QPointF, button=Qt.MouseButton.LeftButton):
     return event
 
 def test_point_closes_after_1_point():
-  scene = QGraphicsScene()
+    scene = QGraphicsScene()
     shape = Shape(image_size=QSize(500, 500), 
                     shape_type=Shape.ShapeType.RECTANGLE, 
                     mode=Shape.ShapeMode.CREATE)
