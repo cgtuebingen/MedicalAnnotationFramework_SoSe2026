@@ -63,7 +63,7 @@ class SlideView(QGraphicsView):
         self.pixmapFinished.connect(self.set_pixmap)
 
         # Boolean that is set to true if there is a level crossing (or all patches have to be reloaded)
-        self.zoomed = True
+        self.level_crossing = True
         self.updating = False
         self.zoom_finished = True
         self.debug_counter = 0
@@ -123,7 +123,7 @@ class SlideView(QGraphicsView):
         self.image_patches = np.array(self.image_patches)
         self.image_patches = self.image_patches.reshape([self.sqrt_thread_count, self.sqrt_thread_count])
 
-        self.zoomed = True
+        self.level_crossing = True
 
         self.update_pixmap()
         self.sendPixmap.emit(self.pixmap_item)
@@ -164,8 +164,8 @@ class SlideView(QGraphicsView):
         This method checks if new patches need to be loaded
         :return: A list of booleans
         """
-        if self.zoomed:
-            self.zoomed = False
+        if self.level_crossing:
+            self.level_crossing = False
             return [True for _ in range(self.max_threads)]
 
         else:
@@ -240,7 +240,7 @@ class SlideView(QGraphicsView):
         :return: /
         """
         if self.slide:
-            self.zoomed = True
+            self.level_crossing = True
             self.update_pixmap()
 
     @Slot(QWheelEvent)
@@ -266,7 +266,7 @@ class SlideView(QGraphicsView):
             return
 
         if self.cur_level != self.slide.get_best_level_for_downsample(new_downsample):
-            self.zoomed = True
+            self.level_crossing = True
 
         self.cur_downsample = new_downsample
         self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
@@ -276,7 +276,7 @@ class SlideView(QGraphicsView):
 
         self.pixmap_item.setScale(1 / self.cur_level_zoom)
 
-        if self.zoomed:
+        if self.level_crossing:
             # TODO: This is still dependent on calling the mouse pos twice. This could be fixed by directly calculating
             #  the necessary vector. But I do not know how to calculate this vector.
             self.cur_level = self.slide.get_best_level_for_downsample(self.cur_downsample)
@@ -284,10 +284,6 @@ class SlideView(QGraphicsView):
             self.anchor_point = self.mouse_pos.toPoint()
             tmp_pos = self.pixmap_item.pos()
             self.pixmap_compensation += QPointF(-tmp_pos.x()-self.width / self.cur_level_zoom, -tmp_pos.y()-self.height / self.cur_level_zoom)
-            older_mouse = self.get_mouse_vp(event)
-            new_mouse = self.get_mouse_vp(event)
-            pix_move = (new_mouse - older_mouse) / self.cur_level_zoom
-            self.pixmap_compensation += pix_move
             pix_move = old_mouse * (1 - scale_factor) / old_level_zoom
 
             self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
