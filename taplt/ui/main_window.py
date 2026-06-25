@@ -174,6 +174,10 @@ class LabelingMainWindow(QMainWindow):
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
 
+    def show_duplicate_warning(self, filename: str):
+        QMessageBox.warning(self, "Duplicate File",
+                            f'"{filename}" is already in the project and was not added again.')
+
     def set_tool_tip(self, tip: str):
         # TODO: This is kind of working, but not really. You have to hover out of the display widget.
         self.main_widget.setStatusTip(tip)

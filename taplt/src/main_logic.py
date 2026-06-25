@@ -42,6 +42,7 @@ class MainLogic:
         self.database.sOpenSettings.connect(self.main_window.open_settings)
         self.database.sApplySettings.connect(self.main_window.apply_settings)
         self.database.sPreviewDatabase.connect(self.main_window.preview_database)
+        self.database.sDuplicateFile.connect(self.main_window.show_duplicate_warning)
 
     def disconnect(self):
         """disconnects the main window from the database when user closes a project

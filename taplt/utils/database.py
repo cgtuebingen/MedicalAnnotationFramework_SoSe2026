@@ -84,6 +84,7 @@ class SQLiteDatabase(QObject):
     sOpenSettings = Signal(list)
     sApplySettings = Signal(list)
     sPreviewDatabase = Signal(list, list)
+    sDuplicateFile = Signal(str)
 
     def __init__(self):
         super(SQLiteDatabase, self).__init__()
@@ -109,6 +110,25 @@ class SQLiteDatabase(QObject):
             p = self.cursor.execute("""SELECT uid FROM patients WHERE some_id = ?""", (patient,)).fetchone()
             patient = p[0] if p else self.add_patient(patient)
             mod = modality(filepath)
+
+            basename = str(os.path.basename(filepath))
+
+            # Check for duplicate before attempting insert
+            if mod == Modality.video:
+                table = 'videos'
+            elif mod == Modality.image:
+                table = 'images'
+            elif mod == Modality.slide:
+                table = 'slides'
+            else:
+                return
+
+            existing = self.cursor.execute(
+                f"SELECT uid FROM {table} WHERE filename = ?", (basename,)).fetchone()
+
+            if existing:
+                self.sDuplicateFile.emit(basename)  # trigger warning signal
+                return
 
             # copy to project location and add to database
             if mod == Modality.video:
