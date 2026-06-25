@@ -16,6 +16,7 @@ from openslide import OpenSlide
 class SlideView(QGraphicsView):
     sendPixmap = Signal(QGraphicsPixmapItem)
     pixmapFinished = Signal()
+    sZoomChanged = Signal(float)
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -271,6 +272,8 @@ class SlideView(QGraphicsView):
         self.cur_downsample = new_downsample
         self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
         old_level_zoom = self.cur_level_zoom
+        zoom_factor = self.max_downsample / self.cur_downsample
+        self.sZoomChanged.emit(zoom_factor)
 
         self.mouse_pos += mouse_vp * old_downsample * (1 - scale_factor)
 
