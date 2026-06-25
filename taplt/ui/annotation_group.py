@@ -47,7 +47,11 @@ class AnnotationGroup(QGraphicsObject):
     @Slot()
     def set_drawing_to_false(self):
         self.drawing = False
-        self.sToolTip.emit("")
+        #print(f"[set_drawing_to_false] pending_shapes={len(self.pending_shapes)}")
+        if self.pending_shapes:
+            self.sToolTip.emit("Press Enter to label all annotations.")
+        else: 
+            self.sToolTip.emit("")
 
     @Slot()
     def create_shape(self):
