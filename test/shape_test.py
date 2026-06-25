@@ -14,6 +14,16 @@ def make_mouse_event(pos: QPointF, button=Qt.MouseButton.LeftButton):
     event.setPos(pos)
     return event
 
+def test_point_closes_after_1_point():
+    scene = QGraphicsScene()
+    shape = Shape(image_size=QSize(500, 500), 
+                    shape_type=Shape.ShapeType.POINT, 
+                    mode=Shape.ShapeMode.CREATE)
+    scene.addItem(shape)
+    shape.mousePressEvent(make_mouse_event(QPointF(100, 200)))
+    assert len (shape.vertices.vertices) == 1
+    assert shape.is_closed_path == True
+    
 def test_rectangle_closes_after_2_points():
     scene = QGraphicsScene()
     shape = Shape(image_size=QSize(500, 500), 

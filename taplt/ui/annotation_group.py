@@ -58,6 +58,10 @@ class AnnotationGroup(QGraphicsObject):
                                     color=self.draw_new_color)
             self.add_shapes(self.temp_shape)
             self.temp_shape.drawingDone.connect(self.set_drawing_to_false)
+            if self.shapeType == Shape.ShapeType.POINT:
+                self.sToolTip.emit("Click to place the point")
+           
+           
             if self.shapeType == "circle":
                 def delete():
                     self.set_drawing_to_false()

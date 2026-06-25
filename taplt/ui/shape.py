@@ -6,7 +6,7 @@ import math
 from copy import deepcopy
 from typing import *
 import numpy as np
-from taplt.config import VERTEX_SIZE, SCALING_INITIAL
+from taplt.config import VERTEX_SIZE, POINT_SIZE, SCALING_INITIAL
 
 from taplt.utils.qt import closest_euclidean_distance
 
@@ -116,6 +116,8 @@ class Shape(QGraphicsObject):
     @Slot(QGraphicsSceneMouseEvent)
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         if self.mode == Shape.ShapeMode.CREATE:
+            if self.shape_type == "point":
+                return 
             checked_pos = self.check_out_of_bounds(event.scenePos())
             # only update the position of the preview point if you want to create a polygon 
             if self.shape_type == "polygon":
@@ -188,8 +190,14 @@ class Shape(QGraphicsObject):
                         self.vertices.vertices.append(point)   # preview of the next point
                     else:
                         self.vertices.vertices[-1] = point     # update the preview point to a real point of the current mouse position
-                        self.vertices.vertices.append(point)   # new preview point
-                    
+                        self.vertices.vertices.append(point)   # new preview point     
+                elif self.shape_type == "point":
+                    self.vertices.vertices.append(point)
+                    self.ungrabMouse() 
+                    self.is_closed_path = True
+                    self.drawingDone.emit()
+                    event.accept()
+                    return 
                 else:                                          
                     if len(self.vertices.vertices) == 0:
                         self.vertices.vertices.append(point)
@@ -266,6 +274,10 @@ class Shape(QGraphicsObject):
         super(Shape, self).hoverLeaveEvent(event)
 
     def boundingRect(self) -> QRectF:
+        if self.shape_type == 'point' and len(self.vertices.vertices) == 1:
+            radius = POINT_SIZE / 2
+            center = self.vertices.vertices[0]
+            return QRectF(center - QPointF(radius, radius), center + QPointF(radius, radius))
         if self.mode == Shape.ShapeMode.CREATE:
             # if creating the shape we need to ensure the mouse events get called, so we find the biggest boundingRect
             # in the scene. This could probably be done cleaner
@@ -305,6 +317,11 @@ class Shape(QGraphicsObject):
         r"""Reimplementation as the initial method for a QGraphicsItem uses the shape,
         which results in the bounding rectangle. As both tempRectangle and tempTrace do not need
         a contain method due to being an unfinished shape, no method is here for them"""
+        if self.shape_type == 'point' and len(self.vertices.vertices) == 1:
+            center_point = self.vertices.vertices[0]
+            radius = POINT_SIZE / 2
+            return (point.x() - center_point.x()) ** 2 + (point.y() - center_point.y()) ** 2 <= radius ** 2
+
         if self.shape_type in ['polygon']:
             return self.vertices.vertices.containsPoint(point, Qt.FillRule.OddEvenFill)
 
@@ -406,7 +423,8 @@ class Shape(QGraphicsObject):
                 self.vertices.paint(painter)
 
             elif self.shape_type == 'point' and len(self.vertices.vertices) == 1:
-                painter.drawPoint(self.vertices.vertices)
+                radius = POINT_SIZE / 2
+                painter.drawEllipse(self.vertices.vertices[0], radius, radius)
 
             elif len(self.vertices.vertices) > 1:
                 if self.shape_type == "ellipse":
