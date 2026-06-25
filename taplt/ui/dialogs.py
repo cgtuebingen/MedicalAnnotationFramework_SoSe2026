@@ -312,32 +312,45 @@ class ProjectHandlerDialog(QDialog):
         self.layout.addWidget(self.bottom)
 
     def add_files(self):
-        """ function to let user select a file which will be added when the project is finally created"""
+        """
+        Prompts the user to select a patient type and an associated file,
+        then queues the file for project creation.
 
-        # user first needs to specify the type of the file to be imported
+        Side Effects:
+            - Appends to `self.patients`
+            - Modifies `self.files` dictionary
+            - Updates `self.added_files` UI list widget
+        """
+        # prompt user to select/specify the patient type
         dlg = SelectPatientDialog(self.patients)
         dlg.exec()
         self.patients.append(dlg.result)
 
+        # if a patient type was successfully selected, open file chooser
         if dlg.result:
-            filepath, _ = QFileDialog.getOpenFileName(self,
-                                                      caption="Select File",
-                                                      directory=str(Path.home()),
-                                                      options=QFileDialog.Option.DontUseNativeDialog)
+            dialog = QFileDialog(self)
+            dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+            dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+            dialog.setDirectory(str(Path.home()))
+            dialog.setLabelText(QFileDialog.DialogLabel.Accept, "Select File")
 
-            # only care about the filename itself (not regarding its path), to make it easier to handle
-            filename = os.path.basename(filepath)
-            if self.exists(filename):
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Icon.Information)
-                msg.setText("The file\n{}\nalready exists.\nOverwrite?".format(filename))
-                msg.setStandardButtons(QMessageBox.ButtonRole.Ok | QMessageBox.ButtonRole.Cancel)
-                msg.accepted.connect(lambda: self.overwrite(filepath, filename, dlg.result))
-                msg.exec()
-            elif filename:
-                # TODO: Implement possibility to add several files at once
-                self.files[filepath] = dlg.result
-                self.added_files.addItem(QListWidgetItem(filename))
+            # Process the selected file
+            if dialog.exec():
+                filepath = dialog.selectedFiles()[0]
+                filename = os.path.basename(filepath)
+                # Check for duplicate filenames before staging
+                if self.exists(filename):
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Icon.Information)
+                    msg.setText("The file\n{}\nalready exists.".format(filename))
+                    msg.exec()
+                else:
+                    # TODO: Implement possibility to add several files at once
+                    # Stage the file path mapped to the selected patient metadata
+                    self.files[filepath] = dlg.result
+                    # Update the UI list view to show the newly added file
+                    self.added_files.addItem(QListWidgetItem(filename))
+
 
     def check_path(self):
         """ this function verifies/rejects the project path which the user entered in the LineEdit"""
