@@ -342,9 +342,7 @@ class ProjectHandlerDialog(QDialog):
                 if self.exists(filename):
                     msg = QMessageBox()
                     msg.setIcon(QMessageBox.Icon.Information)
-                    msg.setText("The file\n{}\nalready exists.\nOverwrite?".format(filename))
-                    msg.setStandardButtons(QMessageBox.ButtonRole.Ok | QMessageBox.ButtonRole.Cancel)
-                    msg.accepted.connect(lambda: self.overwrite(filepath, filename, dlg.result))
+                    msg.setText("The file\n{}\nalready exists.".format(filename))
                     msg.exec()
                 else:
                     # TODO: Implement possibility to add several files at once
