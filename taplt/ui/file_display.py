@@ -22,6 +22,7 @@ class CenterDisplayWidget(QWidget):
     sDrawingTooltip = Signal(str)
     modalitySwitched = Signal(str)
     sZoomChanged = Signal(float)
+    sEnterPressed = Signal()
 
     CREATE, EDIT = 0, 1
 

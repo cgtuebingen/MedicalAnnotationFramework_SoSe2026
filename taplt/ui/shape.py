@@ -228,12 +228,12 @@ class Shape(QGraphicsObject):
 
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
-        if self.mode == Shape.ShapeMode.FIXED or self.mode == Shape.ShapeMode.EDIT:
-            self.labelRequested.emit()
-            event.accept()
-            return
-        super().mouseDoubleClickEvent(event)
-
+        if self.contains(event.pos()):
+            self.set_mode(Shape.ShapeMode.EDIT)
+        else:
+            event.ignore()
+        super(Shape, self).mouseDoubleClickEvent(event)
+    
     @Slot(QGraphicsSceneMouseEvent)
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         super(Shape, self).mousePressEvent(event)
