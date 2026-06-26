@@ -48,9 +48,28 @@ class AnnotationGroup(QGraphicsObject):
         self.sToolTip.emit("")
 
     def forward_click(self, event):
-        if self.temp_shape is None:
+        if self.temp_shape is None or event is None:
             return
-        scene = self.scene()
+
+        if isinstance(event, QGraphicsSceneMouseEvent):
+            scene_event = event
+        else:
+            scene = self.scene()
+            view = scene.views()[0] if scene and scene.views() else None
+            if view is None:
+                return
+
+            scene_pos = view.mapToScene(event.position().toPoint())
+            scene_event = QGraphicsSceneMouseEvent(QEvent.GraphicsSceneMousePress)
+            scene_event.setPos(scene_pos)
+            scene_event.setScenePos(scene_pos)
+            scene_event.setScreenPos(event.globalPosition().toPoint())
+            scene_event.setButton(event.button())
+            scene_event.setButtons(event.buttons())
+            scene_event.setModifiers(event.modifiers())
+            scene_event.setAccepted(False)
+
+        self.temp_shape.mousePressEvent(scene_event)
 
     @Slot()
     def create_shape(self, event = None):
@@ -77,7 +96,7 @@ class AnnotationGroup(QGraphicsObject):
             else:
                 self.sToolTip.emit("Press left click a 2nd time to end the annotation.")       
             self.temp_shape.grabMouse()
-            if self.event is not None:
+            if event is not None:
                 self.forward_click(event)
         else:
             pass
