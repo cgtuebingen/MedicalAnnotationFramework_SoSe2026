@@ -68,7 +68,7 @@ class CenterDisplayWidget(QWidget):
     def mousePressEvent(self, event: QMouseEvent):
         if self.annotations.mode == AnnotationGroup.AnnotationMode.DRAW:
             if event.button() == Qt.MouseButton.LeftButton:
-                self.annotations.create_shape()
+                self.annotations.create_shape(event)
         event.accept()
 
     def clear(self):
