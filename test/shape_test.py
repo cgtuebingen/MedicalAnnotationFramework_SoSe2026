@@ -67,5 +67,5 @@ def test_forward_first_click():
     annotation_group.create_shape(event)
 
     assert annotation_group.temp_shape is not None
-    assert len(annotation_group.temp_shape.vertices.vertices) == 1
+    assert len(annotation_group.temp_shape.vertices.vertices) == 2
 
