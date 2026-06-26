@@ -48,7 +48,7 @@ def test_circle_not_closed_after_1_point():
 
 def test_forward_first_click():
     scene = QGraphicsScene()
-    scene.sceneRect(0,0,200,200)
+    scene.setSceneRect(0,0,200,200)
     annotation_group = AnnotationGroup()
     scene.addItem(annotation_group)
 
