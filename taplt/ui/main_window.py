@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
+from PySide6.QtGui import QFont
 
 from pathlib import Path
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from taplt.ui.annotation_tree import AnnotationTree
 from taplt.ui.welcome_screen import WelcomeScreen
 from taplt.utils.qt import colormap_rgb, get_icon
 from taplt.utils.project_structure import check_environment, Structure
+from taplt.utils.stylesheets import TAB_STYLESHEET, FONT_SMALL, FONT_MEDIUM, FONT_LARGE
 from taplt.macros.macros import Macros
 from taplt.macros.macros_dialogs import PreviewDatabaseDialog
 
@@ -178,6 +180,7 @@ class LabelingMainWindow(QMainWindow):
 
     def apply_settings(self, settings: list):
         """applies the settings"""
+        font_size = None
         for setting in settings:
             if setting[0] == "Autosave on file change":
                 self.autoSave = setting[1]
@@ -186,6 +189,25 @@ class LabelingMainWindow(QMainWindow):
                 self.sRequestUpdate.emit(self.img_idx)
             elif setting[0] == "Display patient name":
                 self.file_display.patient_label.setVisible(setting[1])
+            elif setting[0] == "Font size":
+                value = str(setting[1]).lower()
+                if value == "small":
+                    font_size = FONT_SMALL
+                elif value == "large":
+                    font_size = FONT_LARGE
+                else:
+                    font_size = FONT_MEDIUM
+
+        if font_size is not None:
+            font = QFont()
+            font.setPointSize(font_size)
+            QApplication.instance().setFont(font)
+            self.file_list.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=font_size))
+            self.file_list.search_field.setFont(font)
+            self.file_list.image_list.setFont(font)
+            self.file_list.wsi_list.setFont(font)
+            self.labels_list.label_list.setFont(font)
+
         self.sUpdateSettings.emit(settings)
 
     def change_detected(self, change: int):
