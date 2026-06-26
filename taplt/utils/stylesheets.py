@@ -1,4 +1,8 @@
-BASE_FONT_SIZE = 11
+FONT_SMALL = 9
+FONT_MEDIUM = 11
+FONT_LARGE = 13
+
+BASE_FONT_SIZE = FONT_MEDIUM
 
 BUTTON_STYLESHEET = """QPushButton {{
                        background-color: lightgray;
