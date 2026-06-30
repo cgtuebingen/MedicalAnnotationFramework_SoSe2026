@@ -135,6 +135,11 @@ class AnnotationGroup(QGraphicsObject):
                 ids_to_remove.append(shape_id)
                 self.annotations[shape_id].deleteLater()
         [(self.annotations[x].disconnect(self.annotations[x]), self.annotations.pop(x)) for x in ids_to_remove]
+        updated_pending_shapes = []
+        for shape in self.pending_shapes:
+            if shape not in shapes:
+                updated_pending_shapes.append(shape)
+        self.pending_shapes = updated_pending_shapes
         self.updateShapes.emit(list(self.annotations.values()))
 
     def clear(self):
