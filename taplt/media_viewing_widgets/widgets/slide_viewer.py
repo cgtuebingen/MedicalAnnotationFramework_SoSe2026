@@ -251,9 +251,8 @@ class SlideView(QGraphicsView):
         :type event: QWheelEvent
         :return: /
         """
-        #Zoom not finished
-        if not self.zoom_finished:
-            print("Zoom not finished")
+        #Zoom not finished or updating
+        if not self.zoom_finished or self.updating:
             return
 
         old_downsample = self.cur_downsample
