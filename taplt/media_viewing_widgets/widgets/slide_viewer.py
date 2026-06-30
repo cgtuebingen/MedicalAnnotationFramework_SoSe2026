@@ -1,5 +1,5 @@
 from PIL.ImageQt import ImageQt
-from PySide6.QtCore import QPointF, Signal, QPoint, QRectF, Slot, QThread, QThreadPool
+from PySide6.QtCore import QPointF, Signal, QPoint, QRectF, Slot, QThread, QThreadPool, QTimer
 from PySide6.QtGui import QPainter, Qt, QPixmap, QResizeEvent, QWheelEvent, QMouseEvent, QImage
 from PySide6.QtWidgets import *
 import numpy as np
@@ -43,7 +43,7 @@ class SlideView(QGraphicsView):
         self.cur_downsample: float = 0.0  # Overall zoom
         self.max_downsample: float = 0.0  # The largest zoom out possible
         self.cur_level_zoom: float = 0.0  # relative zoom of the current level
-        self.level_downsamples = {}  # Lowest zoom for all levels
+        self.level_downsamples = []  # Lowest zoom for all levels
         self.cur_level = 0  # Current level for the zoom
 
         # Display logic
@@ -251,48 +251,37 @@ class SlideView(QGraphicsView):
         :type event: QWheelEvent
         :return: /
         """
+        #Zoom not finished
         if not self.zoom_finished:
+            print("Zoom not finished")
             return
 
         old_downsample = self.cur_downsample
 
-        old_mouse = self.get_mouse_vp(event)
-        mouse_vp = event.position()
-
         scale_factor = 1.1 if event.angleDelta().y() <= 0 else 1 / 1.1
-        new_downsample = min(max(self.cur_downsample * scale_factor, 0.3), self.max_downsample)
+        self.cur_downsample = min(max(self.cur_downsample * scale_factor, 0.3), self.max_downsample)
 
-        if new_downsample == old_downsample:
+        if self.cur_downsample == old_downsample:
             return
 
-        if self.cur_level != self.slide.get_best_level_for_downsample(new_downsample):
+        new_level = self.slide.get_best_level_for_downsample(self.cur_downsample)
+        if self.cur_level != new_level:
             self.level_crossing = True
+            self.cur_level = new_level
 
-        self.cur_downsample = new_downsample
         self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
-        old_level_zoom = self.cur_level_zoom
 
-        self.mouse_pos += mouse_vp * old_downsample * (1 - scale_factor)
-
-        self.pixmap_item.setScale(1 / self.cur_level_zoom)
+        self.mouse_pos += event.position() * self.cur_downsample  * (1/scale_factor - 1)
 
         if self.level_crossing:
-            # TODO: This is still dependent on calling the mouse pos twice. This could be fixed by directly calculating
-            #  the necessary vector. But I do not know how to calculate this vector.
-            self.cur_level = self.slide.get_best_level_for_downsample(self.cur_downsample)
-            self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
             self.anchor_point = self.mouse_pos.toPoint()
             tmp_pos = self.pixmap_item.pos()
-            self.pixmap_compensation += QPointF(-tmp_pos.x()-self.width / self.cur_level_zoom, -tmp_pos.y()-self.height / self.cur_level_zoom)
-            pix_move = old_mouse * (1 - scale_factor) / old_level_zoom
-
-            self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
+            pix_move = QPointF(-tmp_pos.x()-self.width / self.cur_level_zoom, -tmp_pos.y()-self.height / self.cur_level_zoom)
             self.pixmap_compensation += pix_move
             self.zoom_finished = False
-
         else:
-            pix_move = old_mouse * (1 - scale_factor) / old_level_zoom
-
+            self.pixmap_item.setScale(1 / self.cur_level_zoom)
+            pix_move = (- self.pixmap_item.pos() + event.position())  * (1/ scale_factor - 1)
             self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
 
         self.update_pixmap()
