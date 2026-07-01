@@ -324,32 +324,35 @@ class ProjectHandlerDialog(QDialog):
         # prompt user to select/specify the patient type
         dlg = SelectPatientDialog(self.patients)
         dlg.exec()
-        self.patients.append(dlg.result)
+        patient = dlg.result
+
+        if not patient:
+            return
 
         # if a patient type was successfully selected, open file chooser
-        if dlg.result:
-            dialog = QFileDialog(self)
-            dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
-            dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-            dialog.setDirectory(str(Path.home()))
-            dialog.setLabelText(QFileDialog.DialogLabel.Accept, "Select File")
+        dialog = QFileDialog(self)
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        dialog.setDirectory(str(Path.home()))
+        dialog.setLabelText(QFileDialog.DialogLabel.Accept, "Select File")
 
-            # Process the selected file
-            if dialog.exec():
-                filepath = dialog.selectedFiles()[0]
-                filename = os.path.basename(filepath)
-                # Check for duplicate filenames before staging
-                if self.exists(filename):
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Icon.Information)
-                    msg.setText("The file\n{}\nalready exists.".format(filename))
-                    msg.exec()
-                else:
-                    # TODO: Implement possibility to add several files at once
-                    # Stage the file path mapped to the selected patient metadata
-                    self.files[filepath] = dlg.result
-                    # Update the UI list view to show the newly added file
-                    self.added_files.addItem(QListWidgetItem(filename))
+        # Process the selected file
+        if dialog.exec():
+            filepath = dialog.selectedFiles()[0]
+            filename = os.path.basename(filepath)
+            # Check for duplicate filenames before staging
+            if self.exists(filename):
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Icon.Information)
+                msg.setText("The file\n{}\nalready exists.".format(filename))
+                msg.exec()
+            else:
+                # Stage the file path mapped to the selected patient metadata
+                self.files[filepath] = patient
+                # Update the UI list view to show the newly added file
+                self.added_files.addItem(QListWidgetItem(filename))
+                if patient not in self.patients:
+                    self.patients.append(patient)
 
 
     def check_path(self):
