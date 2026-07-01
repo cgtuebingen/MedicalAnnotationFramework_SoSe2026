@@ -207,6 +207,10 @@ class LabelingMainWindow(QMainWindow):
             self.file_list.image_list.setFont(font)
             self.file_list.wsi_list.setFont(font)
             self.labels_list.label_list.setFont(font)
+            self.toolBar.setFont(font)
+
+            for button in self.toolBar.findChildren(QToolButton):
+                button.setFont(font)
 
         self.sUpdateSettings.emit(settings)
 
