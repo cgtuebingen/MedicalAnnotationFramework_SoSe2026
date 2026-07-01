@@ -262,11 +262,10 @@ class SQLiteDatabase(QObject):
         return self.cursor.fetchone()[0]
 
     def get_settings(self):
-        """retrieves the values stored in the settings file"""
+        """retrieves the values stored in the settings file, using default values if no value is stored yet"""
         settings = list()
-        for key in self.settings.allKeys():
-            value = self.settings.value(key)
-            tooltip = get_tooltip(key)
+        for key, default_value, tooltip in SETTINGS:
+            value = self.settings.value(key, default_value)
             settings.append((key, value, tooltip))
         return settings
 

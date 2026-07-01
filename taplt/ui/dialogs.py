@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QMessageBox, QPushButton, QStyle, QDialog, QTextEdit, QDialogButtonBox, QVBoxLayout, \
-    QLineEdit, QLabel, QFrame, QListWidgetItem, QListWidget, QHBoxLayout, QFileDialog
+    QLineEdit, QLabel, QFrame, QListWidgetItem, QListWidget, QHBoxLayout, QFileDialog, QComboBox
 from PySide6.QtCore import QSize, QPoint
 from PySide6.QtGui import Qt, QColor
 
@@ -422,8 +422,19 @@ class SettingDialog(QDialog):
 
         self.header = QLabel("Enter your preferences")
         self.header.setStyleSheet(f"font: bold {BASE_FONT_SIZE + 2}px")
-        self.preferences = SettingList(settings)
+        boolean_settings = [s for s in settings if s[0] != "Font size"]
+        self.preferences = SettingList(boolean_settings)
         self.settings = list()
+
+        # font size selection
+        self.font_size_label = QLabel("Font size")
+        self.font_size_combo = QComboBox()
+        self.font_size_combo.addItems(["small", "medium", "large"])
+        font_setting = next((s[1] for s in settings if s[0] == "Font size"), "medium")
+        idx = self.font_size_combo.findText(str(font_setting))
+        if idx >= 0:
+            self.font_size_combo.setCurrentIndex(idx)
+
 
         # Accept & cancel buttons
         self.confirmation = QDialogButtonBox(
@@ -433,6 +444,8 @@ class SettingDialog(QDialog):
 
         self.layout().addWidget(self.header)
         self.layout().addWidget(self.preferences)
+        self.layout().addWidget(self.font_size_label)
+        self.layout().addWidget(self.font_size_combo)
         self.layout().addWidget(self.confirmation)
 
     def save_settings(self):
@@ -441,6 +454,8 @@ class SettingDialog(QDialog):
             key = item.text()
             value = True if item.checkState() == Qt.CheckState.Checked else False
             self.settings.append((key, value))
+
+        self.settings.append(("Font size", self.font_size_combo.currentText()))
         self.close()
 
 
