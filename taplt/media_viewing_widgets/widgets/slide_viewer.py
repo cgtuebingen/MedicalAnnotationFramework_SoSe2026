@@ -1,5 +1,5 @@
 from PIL.ImageQt import ImageQt
-from PySide6.QtCore import QPointF, Signal, QPoint, QRectF, Slot, QThread, QThreadPool, QTimer
+from PySide6.QtCore import QPointF, Signal, QPoint, QRectF, Slot, QThread, QThreadPool
 from PySide6.QtGui import QPainter, Qt, QPixmap, QResizeEvent, QWheelEvent, QMouseEvent, QImage
 from PySide6.QtWidgets import *
 import numpy as np
