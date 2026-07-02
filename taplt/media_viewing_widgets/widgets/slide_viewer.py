@@ -16,6 +16,7 @@ from openslide import OpenSlide
 class SlideView(QGraphicsView):
     sendPixmap = Signal(QGraphicsPixmapItem)
     pixmapFinished = Signal()
+    sZoomChanged = Signal(float)
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -269,7 +270,7 @@ class SlideView(QGraphicsView):
             self.cur_level = new_level
 
         self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
-
+        
         self.mouse_pos += event.position() * self.cur_downsample  * (1/scale_factor - 1)
 
         if self.level_crossing:
@@ -284,6 +285,9 @@ class SlideView(QGraphicsView):
             self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
 
         self.update_pixmap()
+        
+        zoom_factor = self.max_downsample / self.cur_downsample
+        self.sZoomChanged.emit(zoom_factor)
 
     @Slot(QMouseEvent)
     def mousePressEvent(self, event: QMouseEvent):
