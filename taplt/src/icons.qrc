@@ -32,5 +32,6 @@
     <file>../icons/trace.png</file>
     <file>../icons/point_tool.png</file>
     <file>../icons/polygon_tool.png</file>
+    <file>../icons/arrow_tool.png</file>
   </qresource>
 </RCC>
