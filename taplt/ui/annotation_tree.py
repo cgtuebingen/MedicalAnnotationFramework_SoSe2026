@@ -171,7 +171,8 @@ class AnnotationTree(QTreeWidget):
         for item in self.selectedItems():
             item.setSelected(False)
         item = self.get_item_by_shape(shape)
-        item.setSelected(True)
+        if item is not None:
+            item.setSelected(True)
 
     def update_polygons(self, current_labels: List[Shape]):
         """updates the treeWidget with the specified labels"""

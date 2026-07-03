@@ -3,6 +3,7 @@ from PySide6.QtCore import *
 from typing import *
 from dataclasses import dataclass
 
+from taplt.ui import shape
 from taplt.utils.qt import colormap_rgb
 from taplt.ui.shape import Shape
 from taplt.ui.dialogs import NewLabelDialog, DeleteShapeMessageBox
@@ -35,6 +36,7 @@ class AnnotationGroup(QGraphicsObject):
         self.mode = AnnotationGroup.AnnotationMode.EDIT
         self.shapeType = Shape.ShapeType.POLYGON
         self.drawing = False
+        self.pending_shapes = []
 
     def boundingRect(self):
         return self.childrenBoundingRect()
@@ -45,7 +47,11 @@ class AnnotationGroup(QGraphicsObject):
     @Slot()
     def set_drawing_to_false(self):
         self.drawing = False
-        self.sToolTip.emit("")
+        #print(f"[set_drawing_to_false] pending_shapes={len(self.pending_shapes)}")
+        if self.pending_shapes:
+            self.sToolTip.emit("Press Enter to label all annotations.")
+        else: 
+            self.sToolTip.emit("")
 
     @Slot()
     def create_shape(self):
@@ -97,7 +103,9 @@ class AnnotationGroup(QGraphicsObject):
             shape.selected.connect(self.shape_selected)
             shape.deleted.connect(lambda: self.remove_shapes(shape))
             shape.mode_changed.connect(self.shape_mode_changed)
-            shape.drawingDone.connect(self.set_label)
+            shape.labelRequested.connect(self.set_pending_label)
+            shape.drawingDone.connect(lambda s=shape: self.pending_shapes.append(s))
+            shape.drawingDone.connect(self.set_drawing_to_false)
             shape.sChange.connect(self.sChange.emit)
             self.update()
 
@@ -127,6 +135,11 @@ class AnnotationGroup(QGraphicsObject):
                 ids_to_remove.append(shape_id)
                 self.annotations[shape_id].deleteLater()
         [(self.annotations[x].disconnect(self.annotations[x]), self.annotations.pop(x)) for x in ids_to_remove]
+        updated_pending_shapes = []
+        for shape in self.pending_shapes:
+            if shape not in shapes:
+                updated_pending_shapes.append(shape)
+        self.pending_shapes = updated_pending_shapes
         self.updateShapes.emit(list(self.annotations.values()))
 
     def clear(self):
@@ -134,6 +147,7 @@ class AnnotationGroup(QGraphicsObject):
         Clears the group and scene of shapes
         :return:
         """
+        self.pending_shapes.clear()
         self.remove_shapes(list(self.annotations.values()))
 
     def shape_selected(self):
@@ -148,13 +162,13 @@ class AnnotationGroup(QGraphicsObject):
     def shape_mode_changed(self, mode: Union[int, Shape.ShapeMode]):
         shape = self.sender()  # type: Shape
         if mode == Shape.ShapeMode.FIXED:
-            shape.update_color(self.color_map[shape.group_id])
+            if shape.group_id is not None:
+                shape.update_color(self.color_map[shape.group_id])
 
-    def set_label(self):
-        """
-        opens a dialog to let user enter a label
-        :return: None
-        """
+    def set_pending_label(self):
+        #opens a dialog to let user enter a label
+        #:return: None
+        
         dlg = NewLabelDialog(self.classes, self.color_map)
         dlg.exec()
         label = dlg.result
@@ -163,16 +177,19 @@ class AnnotationGroup(QGraphicsObject):
         if label:
             if label not in self.classes:
                 self.classes.append(label)
-            self.temp_shape.group_id = self.classes.index(label)
-            self.temp_shape.label = label
-            self.temp_shape.set_mode(Shape.ShapeMode.FIXED)
+            group_id = self.classes.index(label)
+            for shape in self.pending_shapes:
+                shape.group_id = group_id
+                shape.label = label
+                shape.set_mode(Shape.ShapeMode.FIXED)
+            
+            self.pending_shapes.clear()
             self.updateShapes.emit(list(self.annotations.values()))
             self.sChange.emit(0)
 
-        # if user entered no label, remove shape
+        # if user entered no label, keep pending shapes
         else:
-            self.remove_shapes([self.temp_shape])
-            self.set_drawing_to_false()
+            pass
 
     def set_mode(self, mode: Union[AnnotationMode, int]):
         self.mode = mode
