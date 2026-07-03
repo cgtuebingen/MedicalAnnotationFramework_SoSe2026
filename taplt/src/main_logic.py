@@ -25,6 +25,7 @@ class MainLogic:
         self.main_window.sDeleteFile.connect(self.database.delete_file)
         self.main_window.sUpdateSettings.connect(self.database.update_settings)
         self.main_window.sDisconnect.connect(self.disconnect)
+        self.main_window.sRequestImportInfo.connect(self.database.send_import_info_for_drop)
 
         # main window's menubar -> database
         self.main_window.menubar.sRequestImport.connect(self.database.send_import_info)
@@ -37,9 +38,11 @@ class MainLogic:
         # database -> main window
         self.database.sUpdate.connect(self.main_window.update_window)
         self.database.sImportFile.connect(self.main_window.import_file)
+        self.database.sImportDroppedFiles.connect(self.main_window.import_file_with_patients)
         self.database.sOpenSettings.connect(self.main_window.open_settings)
         self.database.sApplySettings.connect(self.main_window.apply_settings)
         self.database.sPreviewDatabase.connect(self.main_window.preview_database)
+        self.database.sDuplicateFile.connect(self.main_window.show_duplicate_warning)
 
     def disconnect(self):
         """disconnects the main window from the database when user closes a project

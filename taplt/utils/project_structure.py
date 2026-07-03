@@ -41,10 +41,11 @@ def create_project_structure(project_path: str):
 def modality(filepath: str) -> Modality:
     """This method uses the 'filetype' library to detect the type of the given file
     returns: 'video', 'image' or 'slide'"""
-    if filepath.endswith('mp4'):
+    ext = os.path.splitext(filepath)[1].lower()  # e.g. ".jpg"
+    if ext == '.mp4':
         return Modality.video
-    if filepath.endswith('jpg') or filepath.endswith('png'):
+    if ext in ('.jpg', '.jpeg', '.png'):
         return Modality.image
-    if any(filepath.endswith(ext) for ext in SLIDE_EXTENSIONS):
+    if ext in [e if e.startswith('.') else f'.{e}' for e in SLIDE_EXTENSIONS]:
         return Modality.slide
-    raise Exception("This filetype is not supported")
+    raise Exception(f"This filetype is not supported: {ext}")

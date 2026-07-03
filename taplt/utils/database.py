@@ -80,9 +80,11 @@ class SQLiteDatabase(QObject):
     """class to control an SQL database. inherits a QObject to enable pyqt-signal transfer"""
     sUpdate = Signal(list, int, str, list, list)
     sImportFile = Signal(list)
+    sImportDroppedFiles = Signal(list)
     sOpenSettings = Signal(list)
     sApplySettings = Signal(list)
     sPreviewDatabase = Signal(list, list)
+    sDuplicateFile = Signal(str)
 
     def __init__(self):
         super(SQLiteDatabase, self).__init__()
@@ -108,6 +110,25 @@ class SQLiteDatabase(QObject):
             p = self.cursor.execute("""SELECT uid FROM patients WHERE some_id = ?""", (patient,)).fetchone()
             patient = p[0] if p else self.add_patient(patient)
             mod = modality(filepath)
+
+            basename = str(os.path.basename(filepath))
+
+            # Check for duplicate before attempting insert
+            if mod == Modality.video:
+                table = 'videos'
+            elif mod == Modality.image:
+                table = 'images'
+            elif mod == Modality.slide:
+                table = 'slides'
+            else:
+                return
+
+            existing = self.cursor.execute(
+                f"SELECT uid FROM {table} WHERE filename = ?", (basename,)).fetchone()
+
+            if existing:
+                self.sDuplicateFile.emit(basename)  # trigger warning signal
+                return
 
             # copy to project location and add to database
             if mod == Modality.video:
@@ -384,6 +405,10 @@ class SQLiteDatabase(QObject):
     def send_import_info(self):
         existing_patients = self.get_patients()
         self.sImportFile.emit(existing_patients)
+
+    def send_import_info_for_drop(self):
+        existing_patients = self.get_patients()
+        self.sImportDroppedFiles.emit(existing_patients)
 
     def update_image_annotations(self, image_name: str, entries: list):
         """

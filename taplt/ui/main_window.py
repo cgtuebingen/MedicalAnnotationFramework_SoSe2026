@@ -33,6 +33,7 @@ class LabelingMainWindow(QMainWindow):
     sDeleteFile = Signal(str, int)
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
+    sRequestImportInfo = Signal()
 
     @dataclass
     class Changes:
@@ -171,10 +172,39 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sCloseProject.connect(self.close_project)
         self.menubar.sExampleProject.connect(self.macros.example_project)
 
+        self.file_list.sFilesDropped.connect(self.import_dropped_files)
+
+    def show_duplicate_warning(self, filename: str):
+        QMessageBox.warning(self, "Duplicate File",
+                            f'"{filename}" is already in the project and was not added again.')
+
     def set_tool_tip(self, tip: str):
         # TODO: This is kind of working, but not really. You have to hover out of the display widget.
         self.main_widget.setStatusTip(tip)
         self.main_widget.setToolTip(tip)
+
+    def import_dropped_files(self, filepaths: list):
+        if not filepaths:
+            return
+        self._pending_dropped_files = filepaths
+        self.sRequestImportInfo.emit()
+
+    def import_file_with_patients(self, existing_patients: list):
+        filepaths = getattr(self, '_pending_dropped_files', [])
+        if not filepaths:
+            return
+
+        dlg = SelectPatientDialog(existing_patients)
+        dlg.exec()
+        patient = dlg.result
+        if not patient or not self.check_for_changes():
+            return
+
+        for filepath in filepaths:
+            self.sAddFile.emit(filepath, patient)
+
+        self._pending_dropped_files = []
+        self.sRequestUpdate.emit(self.img_idx)
 
     def apply_settings(self, settings: list):
         """applies the settings"""
@@ -267,11 +297,13 @@ class LabelingMainWindow(QMainWindow):
         patient = dlg.result
 
         if patient:
-            filepath, _ = QFileDialog.getOpenFileName(self,
-                                                      caption="Select File",
-                                                      directory=str(Path.home()), )
-            # options = QFileDialog.DontUseNativeDialog
-            if filepath:
+            dialog = QFileDialog(self)
+            dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+            dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+            dialog.setDirectory(str(Path.home()))
+
+            if dialog.exec():
+                filepath = dialog.selectedFiles()[0]
                 if self.check_for_changes():
                     self.sAddFile.emit(filepath, patient)
                     self.sRequestUpdate.emit(self.img_idx)
