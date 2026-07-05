@@ -65,6 +65,7 @@ class CenterDisplayWidget(QWidget):
         self.layout.addWidget(self.patient_label)
 
         self.image_viewer.sEnterPressed.connect(self.on_enter_pressed)
+        self.slide_viewer.sEnterPressed.connect(self.on_enter_pressed)
 
         self.slide_viewer.sZoomChanged.connect(self.sZoomChanged)
     

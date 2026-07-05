@@ -17,6 +17,7 @@ class SlideView(QGraphicsView):
     sendPixmap = Signal(QGraphicsPixmapItem)
     pixmapFinished = Signal()
     sZoomChanged = Signal(float)
+    sEnterPressed = Signal()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -395,6 +396,9 @@ class SlideView(QGraphicsView):
         self.pixmap_compensation = QPointF(0, 0)
         self.updating = False
         self.zoom_finished = True
+    def keyPressEvent(self, event) -> None:
+        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            self.sEnterPressed.emit()
 
 
 class ImageBlockWrapper(QThread):
