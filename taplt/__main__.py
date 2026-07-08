@@ -4,13 +4,14 @@ import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QFont
 from taplt.src.main_logic import MainLogic
-from taplt.utils.stylesheets import BASE_FONT_SIZE
+from taplt.utils.stylesheets import BASE_FONT_SIZE, FONT_FAMILY
 
 
 def main(_args):
     app = QApplication(sys.argv)
     # Set global application font size
     global_font = QFont()
+    global_font.setFamily(FONT_FAMILY)
     global_font.setPointSize(BASE_FONT_SIZE)
     app.setFont(global_font)
     _ = MainLogic()  # the labeling window
