@@ -1,0 +1,37 @@
+<RCC>
+  <qresource prefix="/icons">
+    <file>../icons/checked.png</file>
+    <file>../icons/circle.png</file>
+    <file>../icons/close.png</file>
+    <file>../icons/ellipse.png</file>
+    <file>../icons/fast-forward.png</file>
+    <file>../icons/image.png</file>
+    <file>../icons/import.png</file>
+    <file>../icons/mouse.png</file>
+    <file>../icons/new.png</file>
+    <file>../icons/next.png</file>
+    <file>../icons/open.png</file>
+    <file>../icons/outline.png</file>
+    <file>../icons/pause.png</file>
+    <file>../icons/pen.png</file>
+    <file>../icons/play.png</file>
+    <file>../icons/plus.png</file>
+    <file>../icons/point.png</file>
+    <file>../icons/polygon.png</file>
+    <file>../icons/prev.png</file>
+    <file>../icons/quit.png</file>
+    <file>../icons/rewind.png</file>
+    <file>../icons/save.png</file>
+    <file>../icons/select.png</file>
+    <file>../icons/settings.png</file>
+    <file>../icons/square.png</file>
+    <file>../icons/trash.png</file>
+    <file>../icons/rect_tool.png</file>
+    <file>../icons/circle_tool.png</file>
+    <file>../icons/ellipse_tool.png</file>
+    <file>../icons/trace.png</file>
+    <file>../icons/point_tool.png</file>
+    <file>../icons/polygon_tool.png</file>
+    <file>../icons/arrow_tool.png</file>
+  </qresource>
+</RCC>
