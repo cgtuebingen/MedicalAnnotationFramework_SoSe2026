@@ -16,6 +16,7 @@ class Structure:
     SLIDES_DIR = "/data/slides/"
     FILE_DIRS = [IMAGES_DIR, VIDEOS_DIR, SLIDES_DIR]
     DATABASE_DEFAULT_NAME = '/database.db'
+    LABEL_TABLE_PATH = '/data/label_table.csv'
 
 
 def check_environment(project_path: str) -> bool:

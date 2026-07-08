@@ -2,14 +2,15 @@ from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 
+import csv
 import os
-from typing import List
+from typing import List, Optional
 
-from taplt.utils.stylesheets import BASE_FONT_SIZE
+from taplt.utils.stylesheets import BASE_FONT_SIZE, BUTTON_STYLESHEET, TAB_STYLESHEET, SETTING_STYLESHEET
 
 from taplt.ui.shape import Shape
 from taplt.utils.qt import createListWidgetItemWithSquareIcon, get_icon
-from taplt.utils.stylesheets import TAB_STYLESHEET, SETTING_STYLESHEET, BASE_FONT_SIZE
+from taplt.utils.label_table import validate_label_table_csv
 
 
 class FileList(QListWidget):
@@ -102,8 +103,115 @@ class LabelList(QListWidget):
             self.addItem(item)
 
 
+class CsvDropTable(QTableWidget):
+    sCsvFilesDropped = Signal(list)
+
+    def __init__(self):
+        super(CsvDropTable, self).__init__()
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        files = []
+        for url in event.mimeData().urls():
+            if url.isLocalFile():
+                filepath = url.toLocalFile()
+                if filepath.lower().endswith(".csv"):
+                    files.append(filepath)
+
+        if files:
+            self.sCsvFilesDropped.emit(files)
+
+        event.acceptProposedAction()
+
+
+class LabelTableWidget(QWidget):
+    """displays metadata rows imported from a label table CSV file"""
+    sImportRequested = Signal()
+    sCsvFilesDropped = Signal(list)
+
+    def __init__(self):
+        super(LabelTableWidget, self).__init__()
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
+        self._filename_col_index = 1
+
+        self.import_button = QPushButton("Import CSV")
+        self.import_button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE))
+        self.import_button.clicked.connect(self.sImportRequested.emit)
+        self.layout().addWidget(self.import_button)
+
+        self.table = CsvDropTable()
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setFrameShape(QFrame.Shape.NoFrame)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.table.sCsvFilesDropped.connect(self.sCsvFilesDropped.emit)
+        self.layout().addWidget(self.table)
+
+    def clear_table(self):
+        self.table.clear()
+        self.table.setRowCount(0)
+        self.table.setColumnCount(0)
+
+    def load_csv(self, path: str) -> Optional[str]:
+        """loads a CSV file into the table; returns an error message or None on success"""
+        error = validate_label_table_csv(path)
+        if error:
+            return error
+
+        try:
+            with open(path, newline="", encoding="utf-8") as csv_file:
+                reader = csv.DictReader(csv_file)
+                headers = reader.fieldnames or []
+                rows = list(reader)
+        except OSError as exc:
+            return str(exc)
+
+        self.table.setColumnCount(len(headers))
+        self.table.setRowCount(len(rows))
+        self.table.setHorizontalHeaderLabels(headers)
+
+        if "filename" in headers:
+            self._filename_col_index = headers.index("filename")
+
+        for row_idx, row in enumerate(rows):
+            for col_idx, column in enumerate(headers):
+                item = QTableWidgetItem(row.get(column, ""))
+                self.table.setItem(row_idx, col_idx, item)
+
+        self.table.resizeColumnsToContents()
+        return None
+
+    def highlight_filename(self, filename: str):
+        """selects and scrolls to the row matching the given filename"""
+        basename = os.path.basename(filename)
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, self._filename_col_index)
+            if item and item.text() == basename:
+                self.table.selectRow(row)
+                self.table.scrollToItem(item, QAbstractItemView.ScrollHint.PositionAtCenter)
+                return
+
+
 class LabelsViewingWidget(QWidget):
-    """ a widget to hold a LabelList displaying the (unique) label class names"""
+    """ a widget to hold label classes and an imported label table"""
+    sCsvFilesDropped = Signal(list)
+
     def __init__(self):
         super(LabelsViewingWidget, self).__init__()
         self.setLayout(QVBoxLayout())
@@ -114,9 +222,20 @@ class LabelsViewingWidget(QWidget):
         self.file_label.setText("Labels")
         self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(self.file_label)
+
+        self.tab = QTabWidget()
+        self.tab.setContentsMargins(0, 0, 0, 0)
+        self.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=BASE_FONT_SIZE))
+
         self.label_list = LabelList()
         self.label_list.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
-        self.layout().addWidget(self.label_list)
+        self.label_table = LabelTableWidget()
+
+        self.tab.addTab(self.label_list, "Classes")
+        self.tab.addTab(self.label_table, "Table")
+        self.layout().addWidget(self.tab)
+
+        self.label_table.sCsvFilesDropped.connect(self.sCsvFilesDropped.emit)
 
 
 class FileViewingWidget(QWidget):

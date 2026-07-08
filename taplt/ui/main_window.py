@@ -2,6 +2,7 @@ from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import QFont
 
+import os
 from pathlib import Path
 from dataclasses import dataclass
 from taplt.src.actions import Action
@@ -36,6 +37,7 @@ class LabelingMainWindow(QMainWindow):
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
     sRequestImportInfo = Signal()
+    sAddLabelTable = Signal(str)
 
     @dataclass
     class Changes:
@@ -92,7 +94,7 @@ class LabelingMainWindow(QMainWindow):
 
         # Right Menu
         self.right_menu_widget = QWidget()
-        self.right_menu_widget.setMaximumWidth(200)
+        self.right_menu_widget.setMaximumWidth(280)
         self.right_menu_widget.setLayout(QVBoxLayout())
         self.right_menu_widget.layout().setContentsMargins(0, 0, 0, 0)
         self.right_menu_widget.layout().setSpacing(0)
@@ -148,6 +150,7 @@ class LabelingMainWindow(QMainWindow):
         self.img_idx = 0
         self.changes = list()
         self.autoSave = False
+        self.project_location = ""
 
         self.macros = Macros()
         self.set_welcome_screen(True)
@@ -173,12 +176,17 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sOpenProject.connect(self.open_project)
         self.menubar.sCloseProject.connect(self.close_project)
         self.menubar.sExampleProject.connect(self.macros.example_project)
+        self.labels_list.label_table.sImportRequested.connect(self.menubar.sRequestImportLabelTable.emit)
+        self.labels_list.sCsvFilesDropped.connect(self.import_dropped_label_tables)
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
 
     def show_duplicate_warning(self, filename: str):
         QMessageBox.warning(self, "Duplicate File",
                             f'"{filename}" is already in the project and was not added again.')
+
+    def show_label_table_import_error(self, error: str):
+        QMessageBox.warning(self, "Could not import label table", error)
 
     def set_tool_tip(self, tip: str):
         # TODO: This is kind of working, but not really. You have to hover out of the display widget.
@@ -206,6 +214,17 @@ class LabelingMainWindow(QMainWindow):
             self.sAddFile.emit(filepath, patient)
 
         self._pending_dropped_files = []
+        self.sRequestUpdate.emit(self.img_idx)
+
+    def import_dropped_label_tables(self, filepaths: list):
+        if not filepaths or not self.project_location:
+            return
+        if not self.check_for_changes():
+            return
+
+        for filepath in filepaths:
+            self.sAddLabelTable.emit(filepath)
+
         self.sRequestUpdate.emit(self.img_idx)
 
     def apply_settings(self, settings: list):
@@ -280,6 +299,8 @@ class LabelingMainWindow(QMainWindow):
         if self.check_for_changes():
             self.set_welcome_screen(True)
             self.menubar.enable_tools(["New Project", "Open Project", "Quit Program", "Example Project"])
+            self.project_location = ""
+            self.labels_list.label_table.clear_table()
             self.sDisconnect.emit()
 
     def delete_file(self, filename):
@@ -333,6 +354,31 @@ class LabelingMainWindow(QMainWindow):
                 if self.check_for_changes():
                     self.sAddFile.emit(filepath, patient)
                     self.sRequestUpdate.emit(self.img_idx)
+
+    def import_label_table(self):
+        """executes a dialog to let the user select a CSV label table for import"""
+        if not self.project_location:
+            return
+
+        dialog = QFileDialog(self)
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        dialog.setNameFilter("CSV (*.csv)")
+        dialog.setDirectory(str(Path.home()))
+
+        if dialog.exec():
+            filepath = dialog.selectedFiles()[0]
+            if self.check_for_changes():
+                self.sAddLabelTable.emit(filepath)
+                self.sRequestUpdate.emit(self.img_idx)
+
+    def load_label_table(self, label_table_path: str):
+        """loads a persisted label table for the current project, if present"""
+        self.labels_list.label_table.clear_table()
+        if label_table_path:
+            error = self.labels_list.label_table.load_csv(label_table_path)
+            if error:
+                self.show_label_table_import_error(error)
 
     def new_project(self):
         """executes a dialog prompting the user to enter information about the new project"""
@@ -413,16 +459,25 @@ class LabelingMainWindow(QMainWindow):
         self.welcome_screen.setHidden(not b)
         self.zoom_label.setVisible(not b)
 
-    def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list):
+    def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list, label_table_path: str = ""):
         """main updating function: all necessary information is passed to the main window"""
         self.img_idx = img_idx
+        if label_table_path:
+            self.project_location = str(Path(label_table_path).parents[1])
+        elif files:
+            self.project_location = str(Path(files[0][0]).parents[2])
+        else:
+            self.project_location = ""
+
         color_map, new_color = colormap_rgb(n=NUM_COLORS)
         self.labels_list.label_list.update_with_classes(classes, color_map)
+        self.load_label_table(label_table_path)
         self.file_list.update_list(files, self.img_idx)
         if files:
             self.set_no_files_screen(False)
             current_labels = self.file_display.init_image(files[self.img_idx][0], patient, labels, classes)
             self.polygons.update_polygons(current_labels)
+            self.labels_list.label_table.highlight_filename(files[self.img_idx][0])
         else:
             self.set_no_files_screen(True)
 
