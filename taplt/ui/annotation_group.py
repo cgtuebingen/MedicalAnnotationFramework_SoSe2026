@@ -39,6 +39,8 @@ class AnnotationGroup(QGraphicsObject):
         self.shapeType = Shape.ShapeType.POLYGON
         self.drawing = False
         self.pending_shapes = []
+        self.undo_stack = []
+        self.redo_stack = []
 
     def boundingRect(self):
         return self.childrenBoundingRect()
@@ -135,17 +137,22 @@ class AnnotationGroup(QGraphicsObject):
             shape.deleted.connect(lambda: self.remove_shapes(shape))
             shape.mode_changed.connect(self.shape_mode_changed)
             shape.labelRequested.connect(self.set_pending_label)
-            shape.drawingDone.connect(lambda s=shape: self.pending_shapes.append(s))
+            if shape not in self.undo_stack:
+                shape.drawingDone.connect(lambda s=shape: self.add_to_history(s))
             shape.drawingDone.connect(self.set_drawing_to_false)
             shape.sChange.connect(self.sChange.emit)
             self.update()
+    
+    def add_to_history(self, shape):
+        self.undo_stack.append(shape)
+        self.redo_stack.clear()
 
     def deselect_all(self):
         """deselects all shapes"""
         for shape in self.annotations.values():
             shape.setSelected(False)
 
-    def remove_shapes(self, shapes: Union[Shape, List[Shape]]):
+    def remove_shapes(self, shapes: Union[Shape, List[Shape]], show_dialog=True):
         """
         Remove shapes from the group and scene if connected to one.
         :param shapes: a shape or list of shapes
@@ -154,10 +161,11 @@ class AnnotationGroup(QGraphicsObject):
         if shapes is None:
             return
         if isinstance(shapes, Shape):
-            dlg = DeleteShapeMessageBox(shapes.label)
-            dlg.exec()
-            if dlg.result() != QMessageBox.Ok:
-                return
+            if show_dialog:
+                dlg = DeleteShapeMessageBox(shapes.label)
+                dlg.exec()
+                if dlg.result() != QMessageBox.Ok:
+                    return
             shapes = [shapes]
             self.sChange.emit(1)
         ids_to_remove = []
@@ -255,7 +263,21 @@ class AnnotationGroup(QGraphicsObject):
         for lbl in current_labels:
             self.add_shapes(lbl)
         self.updateShapes.emit(current_labels)
-
+    
+    def undo(self):
+        if not self.undo_stack:
+            return
+        
+        shape = self.undo_stack.pop()
+        self.redo_stack.append(shape)
+        self.remove_shapes(shape, show_dialog=False)
+    
+    def redo(self):
+        if not self.redo_stack:
+            return
+        shape = self.redo_stack.pop()
+        self.add_shapes(shape)
+        self.undo_stack.append(shape)
 
 if __name__ == '__main__':
     from PySide6.QtGui import *
