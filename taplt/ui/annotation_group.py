@@ -2,6 +2,7 @@ import os
 
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
+from PySide6.QtGui import *
 from typing import *
 from dataclasses import dataclass
 
@@ -39,6 +40,8 @@ class AnnotationGroup(QGraphicsObject):
         self.shapeType = Shape.ShapeType.POLYGON
         self.drawing = False
         self.pending_shapes = []
+        self.l0_coordinates = {}
+        self.current_view_params = None
 
     def boundingRect(self):
         return self.childrenBoundingRect()
@@ -81,6 +84,17 @@ class AnnotationGroup(QGraphicsObject):
             scene_event.setAccepted(False)
 
         self.temp_shape.mousePressEvent(scene_event)
+
+        if self.current_view_params is not None:
+            offset_x, offset_y, pixmap_x, pixmap_y, downsample = self.current_view_params
+            for shape_id, shape in self.annotations.items():
+                if shape_id not in self.l0_coordinates:
+                    l0_points = []
+                    for point in shape.vertices.vertices:
+                        l0_x = offset_x + (point.x() - pixmap_x) * downsample
+                        l0_y = offset_y + (point.y() - pixmap_y) * downsample
+                        l0_points.append((l0_x, l0_y))
+                    self.l0_coordinates[shape_id] = l0_points
 
     @Slot()
     def create_shape(self, event = None):
@@ -179,6 +193,8 @@ class AnnotationGroup(QGraphicsObject):
         :return:
         """
         self.pending_shapes.clear()
+        self.l0_coordinates.clear()
+        self.current_view_params = None
         self.remove_shapes(list(self.annotations.values()))
 
     def shape_selected(self):
@@ -255,6 +271,28 @@ class AnnotationGroup(QGraphicsObject):
         for lbl in current_labels:
             self.add_shapes(lbl)
         self.updateShapes.emit(current_labels)
+    
+    @Slot(float, float, float, float, float)
+    def update_shape_positions(self, offset_x, offset_y, pixmap_x, pixmap_y, downsample):
+        self.current_view_params = (offset_x, offset_y, pixmap_x, pixmap_y, downsample)
+
+        for shape_id, l0_points in self.l0_coordinates.items():
+            if shape_id not in self.annotations:
+                continue
+            shape = self.annotations[shape_id]
+            new_points = []
+            for l0_x, l0_y in l0_points:
+                scene_x = pixmap_x + (l0_x - offset_x) / downsample
+                scene_y = pixmap_y + (l0_y - offset_y) / downsample
+                new_points.append(QPointF(scene_x, scene_y))
+            shape.vertices.vertices = QPolygonF(new_points)
+            shape.update()
+    
+    def scene_to_slide(self, scene_pos: QPointF) -> QPointF:
+        x = self.offset_x + (scene_pos.x() - self.pixmap_x) * self.downsample
+        y = self.offset_y + (scene_pos.y() - self.pixmap_y) * self.downsample
+        return QPointF(x, y)
+
 
 
 if __name__ == '__main__':

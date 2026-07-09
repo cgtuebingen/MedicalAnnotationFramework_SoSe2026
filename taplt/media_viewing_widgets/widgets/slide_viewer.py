@@ -19,6 +19,8 @@ class SlideView(QGraphicsView):
     sZoomChanged = Signal(float)
     sEnterPressed = Signal()
 
+    sViewChanged = Signal(float, float, float, float, float)
+
     def __init__(self, *args):
         super().__init__(*args)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -286,9 +288,9 @@ class SlideView(QGraphicsView):
             self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
 
         self.update_pixmap()
-        
         zoom_factor = self.max_downsample / self.cur_downsample
         self.sZoomChanged.emit(zoom_factor)
+        self.emit_view_params()
 
     @Slot(QMouseEvent)
     def mousePressEvent(self, event: QMouseEvent):
@@ -381,9 +383,20 @@ class SlideView(QGraphicsView):
         self.pixmap_compensation = QPointF(0, 0)
         self.updating = False
         self.zoom_finished = True
+
     def keyPressEvent(self, event) -> None:
         if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
             self.sEnterPressed.emit()
+    def emit_view_params(self):
+        if self.slide is None:
+            return
+        self.sViewChanged.emit(float(self.anchor_point.x()),
+                               float(self.anchor_point.y()),
+                               float(self.pixmap_item.pos().x()),
+                               float(self.pixmap_item.pos().y()),
+                               float(self.cur_downsample)
+        )
+
 
 
 class ImageBlockWrapper(QThread):
