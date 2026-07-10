@@ -397,7 +397,6 @@ class SlideView(QGraphicsView):
         comp = self.pixmap_compensation
         final_x = pos.x() + comp.x()
         final_y = pos.y() + comp.y()
-        print(f"[emit] pos={pos}, comp={comp}, final=({final_x},{final_y}), anchor={self.last_offset_anchor}, ds={self.cur_downsample:.2f}")
         self.sViewChanged.emit(float(self.last_offset_anchor.x()),
                                float(self.last_offset_anchor.y()),
                                #float(self.pixmap_item.pos().x()),
