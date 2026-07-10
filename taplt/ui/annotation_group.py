@@ -57,6 +57,17 @@ class AnnotationGroup(QGraphicsObject):
             self.sToolTip.emit("Press Enter to label all annotations.")
         else: 
             self.sToolTip.emit("")
+        
+        if self.current_view_params is not None:
+            offset_x, offset_y, pixmap_x, pixmap_y, downsample = self.current_view_params
+            for shape_id, shape in self.annotations.items():
+                if shape_id not in self.l0_coordinates:
+                    l0_points = []
+                    for point in shape.vertices.vertices:
+                        l0_x = offset_x + (point.x() - pixmap_x) * downsample
+                        l0_y = offset_y + (point.y() - pixmap_y) * downsample
+                        l0_points.append((l0_x, l0_y))
+                    self.l0_coordinates[shape_id] = l0_points
 
     def forward_click(self, event):
         if self.temp_shape is None or event is None:
@@ -85,16 +96,6 @@ class AnnotationGroup(QGraphicsObject):
 
         self.temp_shape.mousePressEvent(scene_event)
 
-        if self.current_view_params is not None:
-            offset_x, offset_y, pixmap_x, pixmap_y, downsample = self.current_view_params
-            for shape_id, shape in self.annotations.items():
-                if shape_id not in self.l0_coordinates:
-                    l0_points = []
-                    for point in shape.vertices.vertices:
-                        l0_x = offset_x + (point.x() - pixmap_x) * downsample
-                        l0_y = offset_y + (point.y() - pixmap_y) * downsample
-                        l0_points.append((l0_x, l0_y))
-                    self.l0_coordinates[shape_id] = l0_points
 
     @Slot()
     def create_shape(self, event = None):
