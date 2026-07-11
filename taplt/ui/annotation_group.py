@@ -193,7 +193,6 @@ class AnnotationGroup(QGraphicsObject):
         :return:
         """
         self.pending_shapes.clear()
-        self.l0_coordinates.clear()
         self.current_view_params = None
         self.remove_shapes(list(self.annotations.values()))
 
