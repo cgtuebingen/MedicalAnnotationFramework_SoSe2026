@@ -18,6 +18,8 @@ from taplt.utils.project_structure import check_environment, Structure
 from taplt.macros.macros import Macros
 from taplt.macros.macros_dialogs import PreviewDatabaseDialog
 
+from taplt.ui.list_widgets import normalize_setting_value
+
 NUM_COLORS = 25
 
 class LabelingMainWindow(QMainWindow):
@@ -210,12 +212,12 @@ class LabelingMainWindow(QMainWindow):
         """applies the settings"""
         for setting in settings:
             if setting[0] == "Autosave on file change":
-                self.autoSave = setting[1]
+                self.autoSave = normalize_setting_value(setting[1])
             elif setting[0] == "Mark annotated files":
-                self.file_list.show_check_box = setting[1]
+                self.file_list.show_check_box = normalize_setting_value(setting[1])
                 self.sRequestUpdate.emit(self.img_idx)
             elif setting[0] == "Display patient name":
-                self.file_display.patient_label.setVisible(setting[1])
+                self.file_display.patient_label.setVisible(normalize_setting_value(setting[1]))
         self.sUpdateSettings.emit(settings)
 
     def change_detected(self, change: int):
