@@ -414,9 +414,13 @@ class LabelingMainWindow(QMainWindow):
 
     def save_to_database(self):
         """stores the current state of the image to the database"""
-        annotations = list(self.file_display.annotations.annotations.values())
+        annotations = [
+            shape for shape in self.file_display.annotations.annotations.values()
+            if shape.isVisible()
+        ]    
         self.changes.clear()
         self.sSaveToDatabase.emit(annotations, self.img_idx)
+        self.file_display.annotations.clear_history()
 
     def set_no_files_screen(self, b: bool):
         """ either hides the default label or the image display"""

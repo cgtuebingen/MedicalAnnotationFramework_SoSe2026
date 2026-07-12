@@ -139,12 +139,17 @@ class AnnotationGroup(QGraphicsObject):
             shape.labelRequested.connect(self.set_pending_label)
             if shape not in self.undo_stack:
                 shape.drawingDone.connect(lambda s=shape: self.add_to_history(s))
+            shape.drawingDone.connect(lambda s=shape: self.pending_shapes.append(s))
             shape.drawingDone.connect(self.set_drawing_to_false)
             shape.sChange.connect(self.sChange.emit)
             self.update()
     
     def add_to_history(self, shape):
         self.undo_stack.append(shape)
+        self.redo_stack.clear()
+    
+    def clear_history(self):
+        self.undo_stack.clear()
         self.redo_stack.clear()
 
     def deselect_all(self):
@@ -179,7 +184,9 @@ class AnnotationGroup(QGraphicsObject):
             if shape not in shapes:
                 updated_pending_shapes.append(shape)
         self.pending_shapes = updated_pending_shapes
-        self.updateShapes.emit(list(self.annotations.values()))
+        self.updateShapes.emit(
+            [s for s in self.annotations.values() if s.isVisible()]
+        )
 
     def clear(self):
         """
@@ -239,7 +246,9 @@ class AnnotationGroup(QGraphicsObject):
                 shape.set_mode(Shape.ShapeMode.FIXED)
             
             self.pending_shapes.clear()
-            self.updateShapes.emit(list(self.annotations.values()))
+            self.updateShapes.emit(
+                [s for s in self.annotations.values() if s.isVisible()]
+            )
             self.sChange.emit(0)
 
         # if user entered no label, keep pending shapes
@@ -269,15 +278,28 @@ class AnnotationGroup(QGraphicsObject):
             return
         
         shape = self.undo_stack.pop()
+
+        if shape in self.annotations.values():
+            shape.setVisible(False)
+        
+        if shape in self.pending_shapes:
+            self.pending_shapes.remove(shape)
         self.redo_stack.append(shape)
-        self.remove_shapes(shape, show_dialog=False)
+        self.updateShapes.emit(
+            [s for s in self.annotations.values() if s.isVisible()]
+        )
     
     def redo(self):
         if not self.redo_stack:
             return
         shape = self.redo_stack.pop()
-        self.add_shapes(shape)
+        shape.setVisible(True)
         self.undo_stack.append(shape)
+        if shape.label is None:
+            self.pending_shapes.append(shape)
+        self.updateShapes.emit(
+            [s for s in self.annotations.values() if s.isVisible()]
+        )
 
 if __name__ == '__main__':
     from PySide6.QtGui import *
