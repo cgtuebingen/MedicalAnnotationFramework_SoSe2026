@@ -65,6 +65,7 @@ class CenterDisplayWidget(QWidget):
         self.layout.addWidget(self.patient_label)
 
         self.image_viewer.sEnterPressed.connect(self.on_enter_pressed)
+        self.slide_viewer.sEnterPressed.connect(self.on_enter_pressed)
 
         self.slide_viewer.sZoomChanged.connect(self.sZoomChanged)
     
@@ -75,7 +76,7 @@ class CenterDisplayWidget(QWidget):
     def mousePressEvent(self, event: QMouseEvent):
         if self.annotations.mode == AnnotationGroup.AnnotationMode.DRAW:
             if event.button() == Qt.MouseButton.LeftButton:
-                self.annotations.create_shape()
+                self.annotations.create_shape(event)
         event.accept()
 
     def clear(self):

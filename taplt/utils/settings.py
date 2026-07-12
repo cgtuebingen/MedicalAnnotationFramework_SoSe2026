@@ -12,7 +12,12 @@ s3 = ("Display patient name",
       False,
       "Shows the patient name at the bottom of the image")
 
-SETTINGS = [s1, s2, s3]
+s4 = ("Font size",
+      "medium",
+      "Font size for the toolbar, menu, and side panels (small/medium/large)")
+
+
+SETTINGS = [s1, s2, s3, s4]
 
 
 def get_tooltip(setting: str):

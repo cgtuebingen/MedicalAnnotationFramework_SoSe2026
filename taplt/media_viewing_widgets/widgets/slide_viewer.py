@@ -17,6 +17,7 @@ class SlideView(QGraphicsView):
     sendPixmap = Signal(QGraphicsPixmapItem)
     pixmapFinished = Signal()
     sZoomChanged = Signal(float)
+    sEnterPressed = Signal()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -44,7 +45,7 @@ class SlideView(QGraphicsView):
         self.cur_downsample: float = 0.0  # Overall zoom
         self.max_downsample: float = 0.0  # The largest zoom out possible
         self.cur_level_zoom: float = 0.0  # relative zoom of the current level
-        self.level_downsamples = {}  # Lowest zoom for all levels
+        self.level_downsamples = []  # Lowest zoom for all levels
         self.cur_level = 0  # Current level for the zoom
 
         # Display logic
@@ -64,7 +65,7 @@ class SlideView(QGraphicsView):
         self.pixmapFinished.connect(self.set_pixmap)
 
         # Boolean that is set to true if there is a level crossing (or all patches have to be reloaded)
-        self.zoomed = True
+        self.level_crossing = True
         self.updating = False
         self.zoom_finished = True
         self.debug_counter = 0
@@ -124,7 +125,7 @@ class SlideView(QGraphicsView):
         self.image_patches = np.array(self.image_patches)
         self.image_patches = self.image_patches.reshape([self.sqrt_thread_count, self.sqrt_thread_count])
 
-        self.zoomed = True
+        self.level_crossing = True
 
         self.update_pixmap()
         self.sendPixmap.emit(self.pixmap_item)
@@ -165,8 +166,8 @@ class SlideView(QGraphicsView):
         This method checks if new patches need to be loaded
         :return: A list of booleans
         """
-        if self.zoomed:
-            self.zoomed = False
+        if self.level_crossing:
+            self.level_crossing = False
             return [True for _ in range(self.max_threads)]
 
         else:
@@ -241,7 +242,7 @@ class SlideView(QGraphicsView):
         :return: /
         """
         if self.slide:
-            self.zoomed = True
+            self.level_crossing = True
             self.update_pixmap()
 
     @Slot(QWheelEvent)
@@ -252,57 +253,42 @@ class SlideView(QGraphicsView):
         :type event: QWheelEvent
         :return: /
         """
-        if not self.zoom_finished:
+        #Zoom not finished or updating
+        if not self.zoom_finished or self.updating:
             return
 
         old_downsample = self.cur_downsample
 
-        old_mouse = self.get_mouse_vp(event)
-        mouse_vp = event.position()
-
         scale_factor = 1.1 if event.angleDelta().y() <= 0 else 1 / 1.1
-        new_downsample = min(max(self.cur_downsample * scale_factor, 0.3), self.max_downsample)
+        self.cur_downsample = min(max(self.cur_downsample * scale_factor, 0.3), self.max_downsample)
 
-        if new_downsample == old_downsample:
+        if self.cur_downsample == old_downsample:
             return
 
-        if self.cur_level != self.slide.get_best_level_for_downsample(new_downsample):
-            self.zoomed = True
+        new_level = self.slide.get_best_level_for_downsample(self.cur_downsample)
+        if self.cur_level != new_level:
+            self.level_crossing = True
+            self.cur_level = new_level
 
-        self.cur_downsample = new_downsample
         self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
-        old_level_zoom = self.cur_level_zoom
-        zoom_factor = self.max_downsample / self.cur_downsample
-        self.sZoomChanged.emit(zoom_factor)
+        
+        self.mouse_pos += event.position() * self.cur_downsample  * (1/scale_factor - 1)
 
-        self.mouse_pos += mouse_vp * old_downsample * (1 - scale_factor)
-
-        self.pixmap_item.setScale(1 / self.cur_level_zoom)
-
-        if self.zoomed:
-            # TODO: This is still dependent on calling the mouse pos twice. This could be fixed by directly calculating
-            #  the necessary vector. But I do not know how to calculate this vector.
-            self.cur_level = self.slide.get_best_level_for_downsample(self.cur_downsample)
-            self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
+        if self.level_crossing:
             self.anchor_point = self.mouse_pos.toPoint()
             tmp_pos = self.pixmap_item.pos()
-            self.pixmap_compensation += QPointF(-tmp_pos.x()-self.width / self.cur_level_zoom, -tmp_pos.y()-self.height / self.cur_level_zoom)
-            older_mouse = self.get_mouse_vp(event)
-            new_mouse = self.get_mouse_vp(event)
-            pix_move = (new_mouse - older_mouse) / self.cur_level_zoom
-            self.pixmap_compensation += pix_move
-            pix_move = old_mouse * (1 - scale_factor) / old_level_zoom
-
-            self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
+            pix_move = QPointF(-tmp_pos.x()-self.width / self.cur_level_zoom, -tmp_pos.y()-self.height / self.cur_level_zoom)
             self.pixmap_compensation += pix_move
             self.zoom_finished = False
-
         else:
-            pix_move = old_mouse * (1 - scale_factor) / old_level_zoom
-
+            self.pixmap_item.setScale(1 / self.cur_level_zoom)
+            pix_move = (- self.pixmap_item.pos() + event.position())  * (1/ scale_factor - 1)
             self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
 
         self.update_pixmap()
+        
+        zoom_factor = self.max_downsample / self.cur_downsample
+        self.sZoomChanged.emit(zoom_factor)
 
     @Slot(QMouseEvent)
     def mousePressEvent(self, event: QMouseEvent):
@@ -395,6 +381,9 @@ class SlideView(QGraphicsView):
         self.pixmap_compensation = QPointF(0, 0)
         self.updating = False
         self.zoom_finished = True
+    def keyPressEvent(self, event) -> None:
+        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            self.sEnterPressed.emit()
 
 
 class ImageBlockWrapper(QThread):
