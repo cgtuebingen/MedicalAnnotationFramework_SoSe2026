@@ -137,8 +137,7 @@ class AnnotationGroup(QGraphicsObject):
             shape.deleted.connect(lambda: self.remove_shapes(shape))
             shape.mode_changed.connect(self.shape_mode_changed)
             shape.labelRequested.connect(self.set_pending_label)
-            if shape not in self.undo_stack:
-                shape.drawingDone.connect(lambda s=shape: self.add_to_history(s))
+            shape.drawingDone.connect(lambda s=shape: self.add_to_history(s))
             shape.drawingDone.connect(lambda s=shape: self.pending_shapes.append(s))
             shape.drawingDone.connect(self.set_drawing_to_false)
             shape.sChange.connect(self.sChange.emit)
@@ -157,7 +156,7 @@ class AnnotationGroup(QGraphicsObject):
         for shape in self.annotations.values():
             shape.setSelected(False)
 
-    def remove_shapes(self, shapes: Union[Shape, List[Shape]], show_dialog=True):
+    def remove_shapes(self, shapes: Union[Shape, List[Shape]]):
         """
         Remove shapes from the group and scene if connected to one.
         :param shapes: a shape or list of shapes
@@ -166,11 +165,10 @@ class AnnotationGroup(QGraphicsObject):
         if shapes is None:
             return
         if isinstance(shapes, Shape):
-            if show_dialog:
-                dlg = DeleteShapeMessageBox(shapes.label)
-                dlg.exec()
-                if dlg.result() != QMessageBox.Ok:
-                    return
+            dlg = DeleteShapeMessageBox(shapes.label)
+            dlg.exec()
+            if dlg.result() != QMessageBox.Ok:
+                return
             shapes = [shapes]
             self.sChange.emit(1)
         ids_to_remove = []
@@ -184,9 +182,7 @@ class AnnotationGroup(QGraphicsObject):
             if shape not in shapes:
                 updated_pending_shapes.append(shape)
         self.pending_shapes = updated_pending_shapes
-        self.updateShapes.emit(
-            [s for s in self.annotations.values() if s.isVisible()]
-        )
+        self.updateShapes.emit(list(self.annotations.values()))
 
     def clear(self):
         """
@@ -247,7 +243,7 @@ class AnnotationGroup(QGraphicsObject):
             
             self.pending_shapes.clear()
             self.updateShapes.emit(
-                [s for s in self.annotations.values() if s.isVisible()]
+                list(self.annotations.values())
             )
             self.sChange.emit(0)
 
@@ -286,7 +282,7 @@ class AnnotationGroup(QGraphicsObject):
             self.pending_shapes.remove(shape)
         self.redo_stack.append(shape)
         self.updateShapes.emit(
-            [s for s in self.annotations.values() if s.isVisible()]
+            list(self.annotations.values())
         )
     
     def redo(self):
@@ -298,7 +294,7 @@ class AnnotationGroup(QGraphicsObject):
         if shape.label is None:
             self.pending_shapes.append(shape)
         self.updateShapes.emit(
-            [s for s in self.annotations.values() if s.isVisible()]
+            list(self.annotations.values())
         )
 
 if __name__ == '__main__':
