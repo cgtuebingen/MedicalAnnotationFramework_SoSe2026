@@ -280,6 +280,9 @@ class AnnotationGroup(QGraphicsObject):
         
         if shape in self.pending_shapes:
             self.pending_shapes.remove(shape)
+        
+        if shape in self.pending_shapes:
+            self.pending_shapes.remove(shape)
         self.redo_stack.append(shape)
         self.updateShapes.emit(
             list(self.annotations.values())
