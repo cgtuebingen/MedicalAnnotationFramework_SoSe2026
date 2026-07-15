@@ -187,12 +187,12 @@ class LabelingMainWindow(QMainWindow):
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
 
         undo_action = QAction(self)
-        undo_action.setShortcut(QKeySequence.StandardKey.Undo) # Ctrl+Z
+        undo_action.setShortcut(QKeySequence("Ctrl+Z"))
         undo_action.triggered.connect(self.file_display.annotations.undo)
         self.addAction(undo_action)
 
         redo_action = QAction(self)
-        redo_action.setShortcut(QKeySequence.StandardKey.Redo) # Ctrl+Y
+        redo_action.setShortcut(QKeySequence("Ctrl+Y"))
         redo_action.triggered.connect(self.file_display.annotations.redo)
         self.addAction(redo_action)
 
