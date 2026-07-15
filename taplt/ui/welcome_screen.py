@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PySide6.QtGui import QFont
 from PySide6.QtCore import Qt
 from taplt import source_directory
-from taplt.utils.stylesheets import BASE_FONT_SIZE, FONT_FAMILY
+from taplt.utils.stylesheets import BASE_FONT_SIZE
 
 
 class WelcomeScreen(QWidget):
@@ -16,7 +16,10 @@ class WelcomeScreen(QWidget):
         self.label.setText("Welcome to the \n \n"
                            "All-Purpose Labeling Tool \n \n \n"
                            "Create or open a project to get started")
-        self.label.setFont(QFont(FONT_FAMILY, BASE_FONT_SIZE + 2, QFont.Weight.Bold))
+        font = QFont(self.label.font())
+        font.setPointSize(BASE_FONT_SIZE + 2)
+        font.setBold(True)
+        self.label.setFont(font)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         icon = os.path.join(source_directory, 'icons', 'welcome.jpg').replace("\\", "/")
         self.label.setStyleSheet(f"background-image: url('{icon}');"

@@ -175,6 +175,9 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sExampleProject.connect(self.macros.example_project)
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
+        print("Menu:", self.menuBar().font().family())
+        print("Toolbar:", self.toolBar.font().family())
+        print("FileList:", self.file_list.font().family())
 
     def show_duplicate_warning(self, filename: str):
         QMessageBox.warning(self, "Duplicate File",
@@ -229,7 +232,7 @@ class LabelingMainWindow(QMainWindow):
                     font_size = FONT_MEDIUM
 
         if font_size is not None:
-            font = QFont()
+            font = QFont(QApplication.instance().font())
             font.setPointSize(font_size)
             QApplication.instance().setFont(font)
             self.file_list.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=font_size))
