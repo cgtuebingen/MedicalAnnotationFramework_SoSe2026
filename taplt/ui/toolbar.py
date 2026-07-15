@@ -21,7 +21,6 @@ class Toolbar(QWidget):
 
         self.setLayout(layout)
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self._button_width = 80
 
         self.actionsDict = {}  # This is a lookup table to match the buttons to the numbers they got added
 
@@ -60,15 +59,14 @@ class Toolbar(QWidget):
         [x.setChecked(False) for x in self.button_group.buttons() if x != btn]
 
     def update_button_sizes(self):
-        """Update toolbar and button widths based on the longest button label."""
-        max_width = 40
+        """Update toolbar and button sizes based on the buttons' size hints."""
+        max_width = 0
 
         for button in self.button_group.buttons():
-            text = button.text().replace("\n", " ")
+            max_width = max(max_width, button.sizeHint().width())
 
-            width = button.fontMetrics().horizontalAdvance(text) + 15
-
-            max_width = max(max_width, width)
+        if max_width == 0: # No buttons present, avoid setting width to 0
+            return
 
         self._button_width = max_width
 
