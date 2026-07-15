@@ -241,6 +241,7 @@ class LabelingMainWindow(QMainWindow):
 
             for button in self.toolBar.findChildren(QToolButton):
                 button.setFont(font)
+                self.toolBar.update_button_sizes()
 
         self.sUpdateSettings.emit(settings)
 
