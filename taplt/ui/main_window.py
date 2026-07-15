@@ -101,6 +101,20 @@ class LabelingMainWindow(QMainWindow):
 
         # the label, polygons and file lists
         self.labels_list = LabelsViewingWidget()
+        self.labels_dock = QDockWidget("Labels", self)
+        self.labels_dock.setWidget(self.labels_list)
+
+        self.labels_dock.setAllowedAreas(
+            Qt.LeftDockWidgetArea |
+            Qt.RightDockWidgetArea
+        )
+
+        self.labels_dock.setFeatures(
+            QDockWidget.DockWidgetMovable |
+            QDockWidget.DockWidgetFloatable
+        )
+
+        self.addDockWidget(Qt.RightDockWidgetArea, self.labels_dock)
         self.polygons = AnnotationTree()
         self.file_list = FileViewingWidget()
 
@@ -117,7 +131,7 @@ class LabelingMainWindow(QMainWindow):
         self.poly_widget.layout().addWidget(self.poly_label)
         self.poly_widget.layout().addWidget(self.polygons)
 
-        self.right_menu_widget.layout().addWidget(self.labels_list)
+
         self.right_menu_widget.layout().addWidget(self.poly_widget)
         self.right_menu_widget.layout().addWidget(self.file_list)
 
@@ -456,6 +470,7 @@ class LabelingMainWindow(QMainWindow):
         self.no_files.setHidden(b)
         self.toolBar.setHidden(b)
         self.right_menu_widget.setHidden(b)
+        self.labels_dock.setHidden(b)
         self.welcome_screen.setHidden(not b)
         self.zoom_label.setVisible(not b)
 
