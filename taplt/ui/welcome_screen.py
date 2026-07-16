@@ -1,7 +1,7 @@
 import os
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QPushButton, QVBoxLayout
-from PySide6.QtGui import QFont, QPixmap
+from PySide6.QtGui import QFont, QPixmap, QIcon
 from PySide6.QtCore import Qt, Signal
 from taplt import source_directory
 from taplt.utils.stylesheets import BASE_FONT_SIZE
