@@ -337,6 +337,7 @@ class SlideView(QGraphicsView):
                            move.y() * self.cur_downsample)
             self.mouse_pos += move
             self.update_pixmap()
+            self.emit_view_params()
         super().mouseMoveEvent(event)
 
     def get_cur_zoomed_patch_width(self):
