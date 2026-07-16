@@ -12,7 +12,7 @@ class WelcomeScreen(QWidget):
     def __init__(self):
         super().__init__()
 
-        icon_path = os.path.join(source_directory, 'icons', 'logo.png').replace("\\", "/")
+        icon_path = os.path.join(source_directory, 'icons', 'logo2.png').replace("\\", "/")
         pixmap = QPixmap(icon_path)
 
         # Widget für Logo
