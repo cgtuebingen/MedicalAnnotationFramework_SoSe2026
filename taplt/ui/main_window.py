@@ -150,7 +150,12 @@ class LabelingMainWindow(QMainWindow):
         self.autoSave = False
 
         self.macros = Macros()
+        
+        # welcome screen
         self.set_welcome_screen(True)
+
+        self.welcome_screen.sNewProject.connect(self.new_project)
+        self.welcome_screen.sOpenProject.connect(self.open_project)
 
         # connect signals
         self.file_display.sRequestSave.connect(self.save_to_database)
