@@ -175,9 +175,6 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sExampleProject.connect(self.macros.example_project)
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
-        print("Menu:", self.menuBar().font().family())
-        print("Toolbar:", self.toolBar.font().family())
-        print("FileList:", self.file_list.font().family())
 
     def show_duplicate_warning(self, filename: str):
         QMessageBox.warning(self, "Duplicate File",
