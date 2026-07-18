@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QIcon
 
 from pathlib import Path
 from dataclasses import dataclass
@@ -19,6 +19,8 @@ from taplt.utils.project_structure import check_environment, Structure
 from taplt.utils.stylesheets import TAB_STYLESHEET, FONT_SMALL, FONT_MEDIUM, FONT_LARGE
 from taplt.macros.macros import Macros
 from taplt.macros.macros_dialogs import PreviewDatabaseDialog
+from taplt import source_directory
+import os
 
 from taplt.ui.list_widgets import normalize_setting_value
 
@@ -49,6 +51,7 @@ class LabelingMainWindow(QMainWindow):
     def __init__(self):
         super(LabelingMainWindow, self).__init__()
         self.setWindowTitle("The All-Purpose Labeling Tool")
+        self.setWindowIcon(QIcon(os.path.join(source_directory, 'icons', 'logo2.png')))
         self.resize(1276, 968)
         self.setTabShape(QTabWidget.TabShape.Rounded)
 
@@ -152,7 +155,12 @@ class LabelingMainWindow(QMainWindow):
         self.autoSave = False
 
         self.macros = Macros()
+        
+        # welcome screen
         self.set_welcome_screen(True)
+
+        self.welcome_screen.sNewProject.connect(self.new_project)
+        self.welcome_screen.sOpenProject.connect(self.open_project)
 
         # connect signals
         self.file_display.sRequestSave.connect(self.save_to_database)

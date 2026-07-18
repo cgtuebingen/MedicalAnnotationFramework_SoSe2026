@@ -76,11 +76,7 @@ class Toolbar(QWidget):
         btn.setStyleSheet("""
             QToolButton {
                 qproperty-iconSize: 24px 24px;
-            }
-            QToolButton::icon {
-                margin-top: 16px;
-            }
-                          
+            }      
         """)
 
         self.layout().addWidget(btn)
