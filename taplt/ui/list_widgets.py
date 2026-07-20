@@ -220,6 +220,16 @@ class FileViewingWidget(QWidget):
             else:
                 item.setHidden(False)
 
+def normalize_setting_value(value):
+        if isinstance(value, bool):
+         return value
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"true", "True"}:
+                return True
+            if lowered in {"false", "False"}:
+                return False
+        return bool(value)
 
 class SettingList(QListWidget):
     def __init__(self, settings):
@@ -228,7 +238,7 @@ class SettingList(QListWidget):
         self.setStyleSheet(SETTING_STYLESHEET)
         for setting in settings:
             item = QListWidgetItem(setting[0])
-            checked = Qt.CheckState.Checked if setting[1] else Qt.CheckState.Unchecked
+            checked = Qt.CheckState.Checked if normalize_setting_value(setting[1]) else Qt.CheckState.Unchecked
             item.setCheckState(checked)
             item.setToolTip(setting[2])
             self.addItem(item)

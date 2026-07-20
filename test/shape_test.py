@@ -114,3 +114,34 @@ def test_pending_shapes_get_same_label(monkeypatch):
     assert shape1.label == "Mitochondrien"
     assert shape2.label == "Mitochondrien"
     assert group.pending_shapes == []
+
+def test_undo():
+    scene = QGraphicsScene()
+    group = AnnotationGroup()
+    scene.addItem(group)
+    group.set_type(Shape.ShapeType.RECTANGLE)
+
+    shape1 = finish_shape(group, QPointF(0, 0), QPointF(50, 50))
+    shape2 = finish_shape(group, QPointF(110, 120), QPointF(150, 250))
+
+    group.undo()
+
+    assert shape1.isVisible()
+    assert not shape2.isVisible()
+    assert shape2 not in group.pending_shapes
+    assert shape2 in group.redo_stack
+
+
+def test_redo():
+    scene = QGraphicsScene()
+    group = AnnotationGroup()
+    scene.addItem(group)
+    group.set_type(Shape.ShapeType.CIRCLE)
+
+    shape = finish_shape(group, QPointF(20, 220), QPointF(123, 321))
+
+    group.undo()
+    group.redo()
+
+    assert shape.isVisible()
+    assert shape in group.pending_shapes
