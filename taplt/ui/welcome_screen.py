@@ -27,12 +27,18 @@ class WelcomeScreen(QWidget):
 
         # Name
         self.title_label = QLabel("All-Purpose Labeling Tool")
-        self.title_label.setFont(QFont("Oswald", BASE_FONT_SIZE + 12, QFont.Weight.Bold))
+        font = self.font()
+        font.setPointSize(BASE_FONT_SIZE + 12)
+        font.setBold(True)
+        self.title_label.setFont(font)
         self.title_label.setAlignment(Qt.AlignLeft)
 
         # Untertitel
         self.subtitle_label = QLabel("Create or open a project to get started")
-        self.subtitle_label.setFont(QFont("Oswald", BASE_FONT_SIZE + 2, QFont.Weight.Bold))
+        font = self.font()
+        font.setPointSize(BASE_FONT_SIZE + 2)
+        font.setBold(True)
+        self.subtitle_label.setFont(font)
         self.subtitle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         # Buttons
@@ -84,4 +90,3 @@ class WelcomeScreen(QWidget):
         self.icon_label.setPixmap(scaled)
 
         super().resizeEvent(event)
-

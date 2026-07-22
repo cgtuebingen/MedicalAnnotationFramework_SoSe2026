@@ -16,7 +16,11 @@ class ExampleProjectDialog(QDialog):
         self.info = QLabel()
         self.info.setWordWrap(True)
         self.info.setText("Click the button below to create a new project with some example images \n")
-        self.info.setFont(QFont("Helvetica", BASE_FONT_SIZE + 2, QFont.Weight.Bold))
+        
+        font = QFont(self.info.font())
+        font.setPointSize(BASE_FONT_SIZE + 2)
+        font.setBold(True)
+        self.info.setFont(font)
 
         self.button = QPushButton("Show me an example project")
         self.button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE + 1))

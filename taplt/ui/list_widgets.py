@@ -5,8 +5,6 @@ from PySide6.QtGui import *
 import os
 from typing import List
 
-from taplt.utils.stylesheets import BASE_FONT_SIZE
-
 from taplt.ui.shape import Shape
 from taplt.utils.qt import createListWidgetItemWithSquareIcon, get_icon
 from taplt.utils.stylesheets import TAB_STYLESHEET, SETTING_STYLESHEET, BASE_FONT_SIZE
@@ -149,7 +147,7 @@ class FileViewingWidget(QWidget):
         size_policy.setHeightForWidth(self.search_field.sizePolicy().hasHeightForWidth())
         self.search_field.setSizePolicy(size_policy)
         self.search_field.setMaximumHeight(25)
-        font = QFont()
+        font = self.search_field.font()
         font.setPointSize(BASE_FONT_SIZE)
         font.setKerning(True)
 

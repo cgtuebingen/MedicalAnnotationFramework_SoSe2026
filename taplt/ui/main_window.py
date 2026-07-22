@@ -249,7 +249,7 @@ class LabelingMainWindow(QMainWindow):
                     font_size = FONT_MEDIUM
 
         if font_size is not None:
-            font = QFont()
+            font = QFont(QApplication.instance().font())
             font.setPointSize(font_size)
             QApplication.instance().setFont(font)
             self.file_list.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=font_size))
