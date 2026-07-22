@@ -6,6 +6,7 @@ from taplt.ui.dialogs import CommentDialog, DeleteAllMessageBox, DeleteClassMess
 from taplt.ui.shape import Shape
 
 from typing import List
+from taplt.utils.stylesheets import LIST_WIDGET_STYLESHEET
 
 
 class TreeWidgetItem(QTreeWidgetItem):
@@ -31,6 +32,7 @@ class AnnotationTree(QTreeWidget):
 
         self.setColumnCount(2)
         self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setStyleSheet(LIST_WIDGET_STYLESHEET)
         self.setHeaderLabels(["Annotation", "Your notes"])
 
         self.top = TreeWidgetItem(["Annotations", ""])

@@ -7,8 +7,10 @@ from typing import List
 
 from taplt.ui.shape import Shape
 from taplt.utils.qt import createListWidgetItemWithSquareIcon, get_icon
-from taplt.utils.stylesheets import TAB_STYLESHEET, SETTING_STYLESHEET, BASE_FONT_SIZE
-
+from taplt.utils.stylesheets import (
+    TAB_STYLESHEET, SETTING_STYLESHEET, BASE_FONT_SIZE,
+    HEADER_LABEL_STYLESHEET, LIST_WIDGET_STYLESHEET
+)
 
 class FileList(QListWidget):
     """ a list widget subclass to make use of context menu"""
@@ -22,6 +24,7 @@ class FileList(QListWidget):
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setItemAlignment(Qt.AlignmentFlag.AlignLeft)
         self.setAcceptDrops(True)
+        self.setStyleSheet(LIST_WIDGET_STYLESHEET)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         item = self.itemAt(event.pos())
@@ -72,6 +75,7 @@ class LabelList(QListWidget):
         super().__init__(*args)
         self._icon_size = 10
         self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setStyleSheet(LIST_WIDGET_STYLESHEET)
 
     def contextMenuEvent(self, event) -> None:
         pos = event.pos()
@@ -108,7 +112,7 @@ class LabelsViewingWidget(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
         self.file_label = QLabel()
-        self.file_label.setStyleSheet("background-color: rgb(186, 189, 182);")
+        self.file_label.setStyleSheet(HEADER_LABEL_STYLESHEET)
         self.file_label.setText("Labels")
         self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(self.file_label)
@@ -130,7 +134,7 @@ class FileViewingWidget(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
         self.file_label = QLabel()
-        self.file_label.setStyleSheet("background-color: rgb(186, 189, 182);")
+        self.file_label.setStyleSheet(HEADER_LABEL_STYLESHEET)
         self.file_label.setText("File List")
         self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(self.file_label)

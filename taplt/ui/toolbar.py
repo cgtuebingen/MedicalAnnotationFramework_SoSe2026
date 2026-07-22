@@ -4,6 +4,7 @@ from PySide6.QtCore import *
 from typing import *
 
 from taplt.src.actions import Action
+from taplt.utils.stylesheets import TOOLBAR_BUTTON_STYLESHEET
 
 
 class Toolbar(QWidget):
@@ -87,11 +88,7 @@ class Toolbar(QWidget):
         btn.setDefaultAction(action)
         btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         btn.setIconSize(QSize(24, 24))
-        btn.setStyleSheet("""
-            QToolButton {
-                qproperty-iconSize: 24px 24px;
-            }      
-        """)
+        btn.setStyleSheet(TOOLBAR_BUTTON_STYLESHEET)
 
         self.layout().addWidget(btn)
         self.update_button_sizes()
