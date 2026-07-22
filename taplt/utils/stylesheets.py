@@ -33,35 +33,35 @@ BUTTON_STYLESHEET = """QPushButton {{
                        }}
                        """
 
-TAB_STYLESHEET = """ QTabWidget::pane {{
+TAB_STYLESHEET = """ QTabWidget::pane {{{{
                      border: 1px solid {border};
                      top:-1px;
-                     }} 
+                     }}}}
                      
-                     QTabWidget::tab-bar {{
+                     QTabWidget::tab-bar {{{{
                      left: 0px;
-                     }}
+                     }}}}
                      
-                     QTabBar::tab {{
+                     QTabBar::tab {{{{
                      background: {bg_header};
                      color: {text};
                      min-width: 8ex; 
                      padding: 7px;
                      font-size: {{tab_size}}px;
-                     }}
+                     }}}}
                      
-                     QTabBar::tab:hover {{ 
+                     QTabBar::tab:hover {{{{ 
                      background: {hover};
-                     }}
+                     }}}}
                      
-                     QTabBar::tab:selected {{
+                     QTabBar::tab:selected {{{{
                      background: {bg}; 
                      border-left: 1px solid {border};
                      border-right: 1px solid {border}; 
                      border-top: none;
                      border-bottom: none;
                      font: bold;
-                     }}
+                     }}}}
                      """.format(border=COLOR_BORDER, bg_header=COLOR_BG_HEADER,
                                 text=COLOR_TEXT, hover=COLOR_BG_HOVER, bg=COLOR_BG)
 
