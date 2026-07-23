@@ -7,6 +7,7 @@ from taplt.media_viewing_widgets.widgets.image_viewer import ImageViewer
 from taplt.media_viewing_widgets.widgets.slide_viewer import SlideView
 
 from taplt.ui.annotation_group import AnnotationGroup
+from taplt.ui.gen_expression import GenExpression
 from taplt.ui.shape import Shape
 from taplt.utils.qt import get_icon
 from taplt.utils.project_structure import modality, Modality
@@ -45,6 +46,8 @@ class CenterDisplayWidget(QWidget):
         self.scene.addItem(self.pixmap)
         self.annotations = AnnotationGroup()
         self.scene.addItem(self.annotations)
+        self.gen_expressions = GenExpression(QPoint(500,500),10)
+        self.scene.addItem(self.gen_expressions)
         self.annotations.sToolTip.connect(self.sDrawingTooltip.emit)
 
         # QLabel displaying the patient's id/name/alias
@@ -77,6 +80,8 @@ class CenterDisplayWidget(QWidget):
         if self.annotations.mode == AnnotationGroup.AnnotationMode.DRAW:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.annotations.create_shape(event)
+        else: 
+            self.gen_expressions.create_shape(event)
         event.accept()
 
     def clear(self):
@@ -134,8 +139,10 @@ class CenterDisplayWidget(QWidget):
     @Slot(QGraphicsPixmapItem)
     def set_pixmap_to_slide(self, pixmap_item):
         self.scene.removeItem(self.annotations)
+        self.scene.removeItem(self.gen_expressions)
         self.scene.addItem(pixmap_item)
         self.scene.addItem(self.annotations)
+        self.scene.addItem(self.gen_expressions)
 
     def switch_to_modality(self, filepath: str):
         """
