@@ -9,7 +9,7 @@ import os
 
 from taplt.ui.list_widgets import LabelList, SettingList
 from taplt.utils.qt import get_icon
-from taplt.utils.stylesheets import BUTTON_STYLESHEET, BASE_FONT_SIZE
+from taplt.utils.stylesheets import get_button_stylesheet, BASE_FONT_SIZE
 
 
 class CloseMessageBox(QMessageBox):

@@ -1,31 +1,56 @@
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtCore import Qt
+
 FONT_SMALL = 9
 FONT_MEDIUM = 11
 FONT_LARGE = 13
 
 # color palette
-COLOR_BG = "rgb(240, 240, 240)"
-COLOR_BG_HEADER = "rgb(186, 189, 182)"  
-COLOR_BG_HOVER = "rgb(220, 220, 220)"
-COLOR_BG_SELECTED = "rgb(180, 200, 230)"
-COLOR_TEXT = "black"
-COLOR_BORDER = "lightgray"
+THEMES = {
+    "light": dict(bg="rgb(240,240,240)", bg_header="rgb(186,189,182)",
+                  bg_hover="rgb(220,220,220)", bg_selected="rgb(180,200,230)",
+                  text="black", text_selected="black", border="lightgray"),
+    "dark": dict(bg="rgb(45,45,45)", bg_header="rgb(60,60,60)",
+                 bg_hover="rgb(70,70,70)", bg_selected="rgb(70,100,140)",
+                 text="white", text_selected="black", border="rgb(80,80,80)"),
+}
+
+ACTIVE_THEME = "light"  
 
 
 BASE_FONT_SIZE = FONT_MEDIUM
 
-BUTTON_STYLESHEET = """QPushButton {{
-                       background-color: {bg};
-                       color: {text};
+
+def set_theme(dark: bool):
+    """switches the globally active theme; existing widgets must re-apply their stylesheet afterwards"""
+    global ACTIVE_THEME
+    ACTIVE_THEME = "dark" if dark else "light"
+
+
+def current_theme() -> dict:
+    return THEMES[ACTIVE_THEME]
+
+
+def sync_theme_with_system():
+    """reads the current OS color scheme and applies it"""
+    scheme = QGuiApplication.styleHints().colorScheme()
+    set_theme(scheme == Qt.ColorScheme.Dark)
+
+def get_button_stylesheet(button_size: int = BASE_FONT_SIZE) -> str:
+    c = current_theme()
+    return f"""QPushButton {{
+                       background-color: {c['bg']};
+                       color: {c['text']};
                        min-height: 2em;
                        border-width: 2px;
                        border-radius: 8px;
                        border-color: black;
-                       font: bold {{button_size}}px;
+                       font: bold {button_size}px;
                        padding: 2px;
                        }}
                        
                        QPushButton::hover {{
-                       background-color: {hover};
+                       background-color: {c['bg_hover']};
                        }}
                        
                        QPushButton::pressed {{
@@ -33,8 +58,10 @@ BUTTON_STYLESHEET = """QPushButton {{
                        }}
                        """
 
-TAB_STYLESHEET = """ QTabWidget::pane {{{{
-                     border: 1px solid {border};
+def get_tab_stylesheet(tab_size: int = BASE_FONT_SIZE) -> str:
+    c = current_theme()
+    return f""" QTabWidget::pane {{{{
+                     border: 1px solid {c['border']};
                      top:-1px;
                      }}}}
                      
@@ -43,62 +70,84 @@ TAB_STYLESHEET = """ QTabWidget::pane {{{{
                      }}}}
                      
                      QTabBar::tab {{{{
-                     background: {bg_header};
-                     color: {text};
+                     background: {c['bg_header']};
+                     color: {c['text']};
                      min-width: 8ex; 
                      padding: 7px;
                      font-size: {{tab_size}}px;
                      }}}}
                      
                      QTabBar::tab:hover {{{{ 
-                     background: {hover};
+                     background: {c['bg_hover']};
                      }}}}
                      
                      QTabBar::tab:selected {{{{
-                     background: {bg}; 
-                     border-left: 1px solid {border};
-                     border-right: 1px solid {border}; 
+                     background: {c['bg']}; 
+                     border-left: 1px solid {c['border']};
+                     border-right: 1px solid {c['border']}; 
                      border-top: none;
                      border-bottom: none;
                      font: bold;
                      }}}}
-                     """.format(border=COLOR_BORDER, bg_header=COLOR_BG_HEADER,
-                                text=COLOR_TEXT, hover=COLOR_BG_HOVER, bg=COLOR_BG)
+                     """
 
 SETTING_STYLESHEET = """ QListWidget::item:hover:!active
                          """
 
-HEADER_LABEL_STYLESHEET = f"background-color: {COLOR_BG_HEADER}; color: {COLOR_TEXT};"
+def get_header_label_stylesheet() -> str:
+    c = current_theme()
+    return f"background-color: {c['bg_header']}; color: {c['text']};"
 
-LIST_WIDGET_STYLESHEET = f"""
-    QListWidget, QTreeWidget {{
-        background-color: {COLOR_BG};
-        color: {COLOR_TEXT};
-    }}
-    QListWidget::item:hover, QTreeWidget::item:hover {{
-        background-color: {COLOR_BG_HOVER};
-    }}
-    QListWidget::item:selected, QTreeWidget::item:selected {{
-        background-color: {COLOR_BG_SELECTED};
-    }}
-    QHeaderView::section {{
-        background-color: {COLOR_BG_HEADER};
-        color: {COLOR_TEXT};
-    }}
+def get_list_widget_stylesheet() -> str:
+    c = current_theme()
+    return f"""
+        QListWidget, QTreeWidget {{
+            background-color: {c['bg']};
+            color: {c['text']};
+        }}
+        QListWidget::item:hover, QTreeWidget::item:hover {{
+            background-color: {c['bg_hover']};
+        }}
+        QListWidget::item:selected, QTreeWidget::item:selected {{
+            background-color: {c['bg_selected']};
+            color: {c['text_selected']}
+        }}
+        QHeaderView::section {{
+            background-color: {c['bg_header']};
+            color: {c['text']};
+        }}
+    """
+
+
+def get_toolbar_button_stylesheet() -> str:
+    c = current_theme()
+    return f"""
+        QToolButton {{
+            qproperty-iconSize: 24px 24px;
+            color: {c['text']};
+            background-color: {c['bg_header']};
+        }}
+        QToolButton::icon {{
+            margin-top: 16px;
+        }}
+        QToolButton:checked {{
+            background-color: {c['bg_hover']};
+        }}
+    """
+
+
+def get_label_stylesheet() -> str:
+    c = current_theme()
+    return f"color: {c['text']}; background-color: {c['bg']};"
+
+
+def get_toolbar_background_stylesheet() -> str:
+    c = current_theme()
+    return f"background-color: {c['bg_header']};"
+
+OVERLAY_LABEL_STYLESHEET = """
+    background-color: rgba(0, 0, 0, 150);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
 """
-
-TOOLBAR_BUTTON_STYLESHEET = f"""
-    QToolButton {{
-        qproperty-iconSize: 24px 24px;
-        color: {COLOR_TEXT};
-        background-color: {COLOR_BG_HEADER};
-    }}
-    QToolButton::icon {{
-        margin-top: 16px;
-    }}
-    QToolButton:checked {{
-        background-color: {COLOR_BG_HOVER};
-    }}
-"""
-
-LABEL_STYLESHEET = f"color: {COLOR_TEXT}; background-color: {COLOR_BG};"
