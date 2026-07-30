@@ -55,8 +55,8 @@ class GenExpression(QGraphicsObject):
             n = 4
             y = 50
             shapes:List[Shape] = []
-            for x in range(20, int(s.width())-20, 50):
-                for y in range(20,int(s.height())-20, 50):
+            for x in range(20, int(s.width())-20, 200):
+                for y in range(20,int(s.height())-20, 200):
                     point = [QPointF(x,y), QPointF(x+10,y)]
                     for i in range(n):    
                         shapes.append(Shape(image_size=QSize(int(s.width()), int(s.height())),
@@ -65,12 +65,6 @@ class GenExpression(QGraphicsObject):
                                             color=self.draw_new_color, 
                                             points=point))
             self.add_shapes(shapes)
-            #self.temp_shape = Shape(image_size=QSize(int(s.width()), int(s.height())),
-            #                        shape_type=Shape.ShapeType.CIRCLE,
-            #                        mode=Shape.ShapeMode.FIXED, # type: ignore
-            #                        color=self.draw_new_color, 
-            #                        points=points_list[i])#[QPointF(990.696,682.665),QPointF(884.847,676.322)])
-            #self.add_shapes(self.temp_shape)
             #self.temp_shape.drawingDone.connect(self.set_drawing_to_false)
             #self.temp_shape.grabMouse()
             if event is not None:

@@ -22,6 +22,8 @@ from taplt.macros.macros_dialogs import PreviewDatabaseDialog
 
 from taplt.ui.list_widgets import normalize_setting_value
 
+import pandas
+
 NUM_COLORS = 25
 
 class LabelingMainWindow(QMainWindow):
@@ -175,6 +177,7 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sOpenProject.connect(self.open_project)
         self.menubar.sCloseProject.connect(self.close_project)
         self.menubar.sExampleProject.connect(self.macros.example_project)
+        self.menubar.sGenExpression.connect(self.loadGenExpressions)
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
 
@@ -376,6 +379,20 @@ class LabelingMainWindow(QMainWindow):
         s = dlg.settings
         if dlg.settings:
             self.apply_settings(dlg.settings)
+    def loadGenExpressions(self):
+        spatial_info, _ = QFileDialog.getOpenFileName(self,
+                                                caption="Select GenExpressions csv",
+                                                dir=str(Path.home()),
+                                                filter="Database (*.csv)",
+                                                options=QFileDialog.Option.DontUseNativeDialog)
+        if spatial_info:
+            print("Found data:\t"+spatial_info)
+            f = pandas.read_csv(spatial_info)  
+            spots = [{"barcode":barcode,
+                      "pxl_row":pxl_row_in_fullres,
+                      "pxl_col":pxl_col_in_fullres} for [barcode,_,_,_,pxl_row_in_fullres,pxl_col_in_fullres] in f.to_numpy()]
+            print(f)
+            print(spots[0:10])
 
     def next_image(self, direction: int):
         """proceeds to the next/previous image"""
