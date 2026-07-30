@@ -8,6 +8,7 @@ from taplt.media_viewing_widgets.widgets.slide_viewer import SlideView
 
 from taplt.ui.annotation_group import AnnotationGroup
 from taplt.ui.shape import Shape
+from taplt.ui.ruler import RulerWidget
 from taplt.utils.qt import get_icon
 from taplt.utils.project_structure import modality, Modality
 
@@ -51,23 +52,46 @@ class CenterDisplayWidget(QWidget):
         self.patient_label = QLabel()
         self.patient_label.setContentsMargins(10, 0, 10, 0)
 
+        self.top_ruler = RulerWidget(RulerWidget.HORIZONTAL)
+        self.left_ruler = RulerWidget(RulerWidget.VERTICAL)
+
+        self.corner = QLabel()
+        self.corner.setFixedSize(25, 25)
+
         self.hide_button = QPushButton(get_icon("next"), "", self)
         self.hide_button.setGeometry(0, 0, 40, 40)
 
         # put the viewer in the ImageDisplay-Frame
         self.image_viewer.setFrameShape(QFrame.Shape.NoFrame)
         self.layout = QVBoxLayout(self)
-        self.layout.addWidget(self.image_viewer)
-        self.layout.addWidget(self.video_player)
-        self.layout.addWidget(self.slide_viewer)
 
+        viewer_container = QVBoxLayout()
+        viewer_container.addWidget(self.image_viewer)
+        viewer_container.addWidget(self.video_player)
+        viewer_container.addWidget(self.slide_viewer)
+
+        viewer_layout = QHBoxLayout()
+        viewer_layout.setSpacing(0)
+        viewer_layout.addWidget(self.left_ruler)
+        viewer_layout.addLayout(viewer_container)
+    
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.corner)
+        top_layout.addWidget(self.top_ruler)
+
+        self.layout.setSpacing(0)
+        self.layout.addLayout(top_layout)
+        self.layout.addLayout(viewer_layout)
+        
         # self.layout.addWidget(self.slide_wrapper)
         self.layout.addWidget(self.patient_label)
-
+        
         self.image_viewer.sEnterPressed.connect(self.on_enter_pressed)
         self.slide_viewer.sEnterPressed.connect(self.on_enter_pressed)
 
         self.slide_viewer.sZoomChanged.connect(self.sZoomChanged)
+        self.sZoomChanged.connect(self.top_ruler.set_zoom)
+        self.sZoomChanged.connect(self.left_ruler.set_zoom)
     
     def on_enter_pressed(self):
             if self.annotations.pending_shapes:          
