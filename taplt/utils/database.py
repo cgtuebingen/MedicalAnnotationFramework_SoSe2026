@@ -382,18 +382,20 @@ class SQLiteDatabase(QObject):
 
     def prepare_files(self, files: list, moda: dict) -> list:
         """goes through all filenames and returns them as full paths,
-        in a tuple together with a boolean indicating whether there is at least 1 annotation in the image"""
+        together with a boolean indicating whether there is at least 1 annotation in the image,
+        and the modality (so the UI can route images vs. slides to the correct tab)"""
         result = list()
         for file in files:
             labels = self.get_label_from_file(file)
             populated = True if labels else False
-            if moda[file] == Modality.image:
-                file = self.location + Structure.IMAGES_DIR + file
-            elif moda[file] == Modality.video:
-                file = self.location + Structure.VIDEOS_DIR + file
+            m = moda[file]
+            if m == Modality.image:
+                file_path = self.location + Structure.IMAGES_DIR + file
+            elif m == Modality.video:
+                file_path = self.location + Structure.VIDEOS_DIR + file
             else:
-                file = self.location + Structure.SLIDES_DIR + file
-            result.append((file, populated))
+                file_path = self.location + Structure.SLIDES_DIR + file
+            result.append((file_path, populated, int(m)))
         return result
 
     def preview_database(self, table_name: str):

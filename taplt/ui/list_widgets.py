@@ -11,6 +11,7 @@ from taplt.utils.stylesheets import BASE_FONT_SIZE, BUTTON_STYLESHEET, TAB_STYLE
 from taplt.ui.shape import Shape
 from taplt.utils.qt import createListWidgetItemWithSquareIcon, get_icon
 from taplt.utils.label_table import validate_label_table_csv
+from taplt.utils.project_structure import Modality
 
 
 class FileList(QListWidget):
@@ -299,35 +300,59 @@ class FileViewingWidget(QWidget):
         self.search_field.textChanged.connect(self.search_text_changed)
 
     def file_selected(self):
-        """gets the index of the selected file and emits a signal"""
+        """gets the global index of the selected file and emits a signal"""
         current_list = self.tab.currentWidget()
         if isinstance(current_list, FileList):
-            idx2 = current_list.currentRow()
-            self.sRequestFileChange.emit(idx2)
+            item = current_list.currentItem()
+            if item is not None:
+                global_idx = item.data(Qt.ItemDataRole.UserRole)
+                self.sRequestFileChange.emit(global_idx)
 
     def get_img_idx(self, filename: str) -> int:
-        """ searches through the ListWidget and returns the index of the item with the filename / -1 if not found"""
-        for i in range(self.image_list.count()):
-            item = self.image_list.item(i)
-            if item.text() == filename:
-                return i
+        """searches both lists and returns the global index of the item with the given filename / -1 if not found"""
+        for list_widget in (self.image_list, self.wsi_list):
+            for i in range(list_widget.count()):
+                item = list_widget.item(i)
+                if item.text() == filename:
+                    return item.data(Qt.ItemDataRole.UserRole)
         return -1
 
     def update_list(self, files: list, img_idx: int):
-        """ clears the list widget and fills it again with the provided filenames"""
+        """clears both list widgets and refills them, routing each file to the Images or WSI
+        tab based on its modality; each item stores its position in the combined files list
+        (the global index used everywhere else in the app) as UserRole data"""
         self.image_list.clear()
-        for file in files:
-            filename = os.path.basename(file[0])
+        self.wsi_list.clear()
 
-            # display check box if image is populated with at least 1 annotation
-            if self.show_check_box and file[1]:
+        for idx, file in enumerate(files):
+            filepath, populated = file[0], file[1]
+            mod = file[2] if len(file) > 2 else Modality.image
+            filename = os.path.basename(filepath)
+
+            if self.show_check_box and populated:
                 icon = get_icon("checked")
                 item = QListWidgetItem(icon, filename)
             else:
                 item = QListWidgetItem(filename)
-            self.image_list.addItem(item)
-        if self.image_list.count() > 0:
-            self.image_list.setCurrentRow(img_idx)
+            item.setData(Qt.ItemDataRole.UserRole, idx)
+
+            if mod == Modality.slide or mod == int(Modality.slide):
+                self.wsi_list.addItem(item)
+            else:
+                self.image_list.addItem(item)
+
+        self._select_global_index(img_idx)
+
+    def _select_global_index(self, global_idx: int):
+        """selects the item matching the given global index, switching to whichever
+        tab (Images or WSI) actually contains it"""
+        for list_widget in (self.image_list, self.wsi_list):
+            for row in range(list_widget.count()):
+                item = list_widget.item(row)
+                if item.data(Qt.ItemDataRole.UserRole) == global_idx:
+                    list_widget.setCurrentRow(row)
+                    self.tab.setCurrentWidget(list_widget)
+                    return
 
     def search_text_changed(self):
         """ filters the list regarding the user input in the search field"""

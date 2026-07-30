@@ -20,6 +20,7 @@ from taplt.utils.project_structure import check_environment, Structure
 from taplt.utils.stylesheets import TAB_STYLESHEET, FONT_SMALL, FONT_MEDIUM, FONT_LARGE
 from taplt.macros.macros import Macros
 from taplt.macros.macros_dialogs import PreviewDatabaseDialog
+from taplt.ui.collapsible_box import CollapsibleBox
 
 NUM_COLORS = 25
 
@@ -99,41 +100,25 @@ class LabelingMainWindow(QMainWindow):
         self.right_menu_widget.layout().setContentsMargins(0, 0, 0, 0)
         self.right_menu_widget.layout().setSpacing(0)
 
-        # the label, polygons and file lists
+        # the label, polygons and file lists — each wrapped in a foldable section
         self.labels_list = LabelsViewingWidget()
-        self.labels_dock = QDockWidget("Labels", self)
-        self.labels_dock.setWidget(self.labels_list)
+        self.labels_list.file_label.hide()  # header now provided by the collapsible box
+        self.labels_section = CollapsibleBox("Labels")
+        self.labels_section.setContentWidget(self.labels_list)
 
-        self.labels_dock.setAllowedAreas(
-            Qt.LeftDockWidgetArea |
-            Qt.RightDockWidgetArea
-        )
-
-        self.labels_dock.setFeatures(
-            QDockWidget.DockWidgetMovable |
-            QDockWidget.DockWidgetFloatable
-        )
-
-        self.addDockWidget(Qt.RightDockWidgetArea, self.labels_dock)
         self.polygons = AnnotationTree()
+        self.polygons.setMinimumSize(QSize(0, 300))
+        self.polygons_section = CollapsibleBox("Polygons")
+        self.polygons_section.setContentWidget(self.polygons)
+
         self.file_list = FileViewingWidget()
+        self.file_list.file_label.hide()  # header now provided by the collapsible box
+        self.file_list_section = CollapsibleBox("File List")
+        self.file_list_section.setContentWidget(self.file_list)
 
-        # widget for the polygons
-        self.poly_widget = QWidget()
-        self.poly_widget.setMinimumSize(QSize(0, 300))
-        self.poly_widget.setLayout(QVBoxLayout())
-        self.poly_widget.layout().setContentsMargins(0, 0, 0, 0)
-        self.poly_widget.layout().setSpacing(0)
-        self.poly_label = QLabel(self)
-        self.poly_label.setStyleSheet("background-color: rgb(186, 189, 182);")
-        self.poly_label.setText("Polygons")
-        self.poly_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.poly_widget.layout().addWidget(self.poly_label)
-        self.poly_widget.layout().addWidget(self.polygons)
-
-
-        self.right_menu_widget.layout().addWidget(self.poly_widget)
-        self.right_menu_widget.layout().addWidget(self.file_list)
+        self.right_menu_widget.layout().addWidget(self.labels_section)
+        self.right_menu_widget.layout().addWidget(self.polygons_section)
+        self.right_menu_widget.layout().addWidget(self.file_list_section)
 
         self.main_widget.layout().addWidget(self.center_frame)
         self.main_widget.layout().addWidget(self.right_menu_widget)
@@ -141,6 +126,14 @@ class LabelingMainWindow(QMainWindow):
 
         self.menubar = MenuBar(self)
         self.setMenuBar(self.menubar)
+        self.right_panel_toggle = QToolButton(self)
+        self.right_panel_toggle.setText("☰")
+        self.right_panel_toggle.setCheckable(True)
+        self.right_panel_toggle.setChecked(True)
+        self.right_panel_toggle.setToolTip("Show/hide side panel")
+        self.right_panel_toggle.setStyleSheet("QToolButton { font-size: 16px; padding: 2px 8px; }")
+        self.right_panel_toggle.clicked.connect(self.toggle_right_panel)
+        self.menubar.setCornerWidget(self.right_panel_toggle, Qt.TopRightCorner)
         self.menubar.setVisible(True)
 
         self.statusbar = QStatusBar()
@@ -427,6 +420,17 @@ class LabelingMainWindow(QMainWindow):
                     msg.setStandardButtons(QMessageBox.StandardButton.Ok)
                     msg.exec()
 
+    def open_menu(self):
+        self.menu(True)
+
+    def close_menu(self):
+        self.menu(False)
+
+    def toggle_right_panel(self, checked: bool):
+        """shows or hides the entire right-hand side panel via the hamburger button"""
+        self.right_menu_widget.setVisible(checked and not self.welcome_screen.isVisible())
+
+
     def open_settings(self, settings: list):
         """opens up the settings dialog, sends signal to save them"""
         dlg = SettingDialog(settings)
@@ -469,10 +473,10 @@ class LabelingMainWindow(QMainWindow):
         self.file_display.setHidden(b)
         self.no_files.setHidden(b)
         self.toolBar.setHidden(b)
-        self.right_menu_widget.setHidden(b)
-        self.labels_dock.setHidden(b)
+        self.right_menu_widget.setHidden(b or not self.right_panel_toggle.isChecked())
         self.welcome_screen.setHidden(not b)
         self.zoom_label.setVisible(not b)
+        self.right_panel_toggle.setEnabled(not b)
 
     def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list, label_table_path: str = ""):
         """main updating function: all necessary information is passed to the main window"""
