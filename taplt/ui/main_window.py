@@ -186,15 +186,8 @@ class LabelingMainWindow(QMainWindow):
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
 
-        undo_action = QAction(self)
-        undo_action.setShortcut(QKeySequence("Ctrl+Z"))
-        undo_action.triggered.connect(self.file_display.annotations.undo)
-        self.addAction(undo_action)
-
-        redo_action = QAction(self)
-        redo_action.setShortcut(QKeySequence("Ctrl+Y"))
-        redo_action.triggered.connect(self.file_display.annotations.redo)
-        self.addAction(redo_action)
+        self.menubar.sUndo.connect(self.file_display.annotations.undo)
+        self.menubar.sRedo.connect(self.file_display.annotations.redo)
 
     def show_duplicate_warning(self, filename: str):
         QMessageBox.warning(self, "Duplicate File",
