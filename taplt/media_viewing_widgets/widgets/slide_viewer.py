@@ -288,11 +288,11 @@ class SlideView(QGraphicsView):
             self.pixmap_item.setScale(1 / self.cur_level_zoom)
             pix_move = (- self.pixmap_item.pos() + event.position())  * (1/ scale_factor - 1)
             self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
+            self.emit_view_params()
 
         self.update_pixmap()
         zoom_factor = self.max_downsample / self.cur_downsample
         self.sZoomChanged.emit(zoom_factor)
-        self.emit_view_params()
 
     @Slot(QMouseEvent)
     def mousePressEvent(self, event: QMouseEvent):

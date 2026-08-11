@@ -275,6 +275,15 @@ class AnnotationGroup(QGraphicsObject):
     def update_shape_positions(self, offset_x, offset_y, pixmap_x, pixmap_y, downsample):
         self.current_view_params = (offset_x, offset_y, pixmap_x, pixmap_y, downsample)
 
+        for shape_id, shape in self.annotations.items():
+            if shape_id not in self.l0_coordinates:
+                l0_points = []
+                for point in shape.vertices.vertices:
+                    l0_x = offset_x + (point.x() - pixmap_x) * downsample
+                    l0_y = offset_y + (point.y() - pixmap_y) * downsample
+                    l0_points.append((l0_x, l0_y))
+                self.l0_coordinates[shape_id] = l0_points
+
         for shape_id, l0_points in self.l0_coordinates.items():
             if shape_id not in self.annotations:
                 continue
