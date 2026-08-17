@@ -217,6 +217,11 @@ class AnnotationTree(QTreeWidget):
                         item.setCheckState(0, Qt.CheckState.Unchecked)
                     child.addChild(item)
 
+    
+    def refresh_theme(self):
+        """re-applies the theme-dependent stylesheet after a dark-mode toggle"""
+        self.setStyleSheet(get_list_widget_stylesheet())
+
 
 def create_square_icon(color: QColor, size: int = 10) -> QIcon:
     pixmap = QPixmap(size, size)
@@ -228,4 +233,6 @@ def create_square_icon(color: QColor, size: int = 10) -> QIcon:
     icon = QIcon(pixmap)
     painter.end()
     return icon
+
+
 

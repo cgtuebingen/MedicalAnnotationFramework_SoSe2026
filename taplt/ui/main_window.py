@@ -272,6 +272,7 @@ class LabelingMainWindow(QMainWindow):
         self.labels_list.refresh_theme()
         self.file_list.refresh_theme()
         self.toolBar.refresh_theme()
+        self.polygons.refresh_theme()
 
     def change_detected(self, change: int):
         """appends the detected change to the changes list"""
