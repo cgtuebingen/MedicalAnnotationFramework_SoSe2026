@@ -12,7 +12,7 @@ from taplt.ui.toolbar import Toolbar
 from taplt.src.main_logic import MainLogic
 from taplt.utils.qt import colormap_rgb
 from taplt.utils.stylesheets import TAB_STYLESHEET, BASE_FONT_SIZE
-
+from taplt.ui.welcome_screen import WelcomeScreen
 
 COLORS, _ = colormap_rgb(25)
 CLASSES = ["Tumour", "Blood", "Blood", "Vein", "Healthy Tissue", "Tumour", "Blood"]
@@ -178,6 +178,13 @@ def test_toolbar():
     window.show()
     app.exec()
 
+def test_welcome_screen():
+
+    screen = WelcomeScreen()
+    screen.sNewProject.connect(lambda: print("New Project clicked"))
+    screen.sOpenProject.connect(lambda: print("Open Project clicked"))
+    screen.show()
+    app.exec()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -201,3 +208,4 @@ if __name__ == "__main__":
     # test_image_display()
     test_toolbar()
     # test_main_window()
+    test_welcome_screen()

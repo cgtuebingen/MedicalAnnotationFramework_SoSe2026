@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QAction, QFont, QKeySequence, QIcon
 
 import os
 from pathlib import Path
@@ -17,10 +17,14 @@ from taplt.ui.annotation_tree import AnnotationTree
 from taplt.ui.welcome_screen import WelcomeScreen
 from taplt.utils.qt import colormap_rgb, get_icon
 from taplt.utils.project_structure import check_environment, Structure
-from taplt.utils.stylesheets import TAB_STYLESHEET, FONT_SMALL, FONT_MEDIUM, FONT_LARGE
+from taplt.utils.stylesheets import (get_tab_stylesheet, get_header_label_stylesheet,
+                                     OVERLAY_LABEL_STYLESHEET, set_theme,
+                                     FONT_SMALL, FONT_MEDIUM, FONT_LARGE, BASE_FONT_SIZE)
 from taplt.macros.macros import Macros
 from taplt.macros.macros_dialogs import PreviewDatabaseDialog
 from taplt.ui.collapsible_box import CollapsibleBox
+from taplt import source_directory
+from taplt.ui.list_widgets import normalize_setting_value
 
 NUM_COLORS = 25
 DEFAULT_RIGHT_PANEL_WIDTH = 280
@@ -52,6 +56,7 @@ class LabelingMainWindow(QMainWindow):
     def __init__(self):
         super(LabelingMainWindow, self).__init__()
         self.setWindowTitle("The All-Purpose Labeling Tool")
+        self.setWindowIcon(QIcon(os.path.join(source_directory, 'icons', 'logo2.png')))
         self.resize(1276, 968)
         self.setTabShape(QTabWidget.TabShape.Rounded)
 
@@ -76,12 +81,7 @@ class LabelingMainWindow(QMainWindow):
 
         # zoom label on top right side
         self.zoom_label = QLabel("100%", self.file_display)
-        self.zoom_label.setStyleSheet("""
-            background-color: rgba(0,0,0,150);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            """)
+        self.zoom_label.setStyleSheet(OVERLAY_LABEL_STYLESHEET)
         self.zoom_label.adjustSize()
         self.zoom_label.raise_()
         self.file_display.hide_button.setVisible(False)
@@ -170,7 +170,12 @@ class LabelingMainWindow(QMainWindow):
         self.project_location = ""
 
         self.macros = Macros()
+        
+        # welcome screen
         self.set_welcome_screen(True)
+
+        self.welcome_screen.sNewProject.connect(self.new_project)
+        self.welcome_screen.sOpenProject.connect(self.open_project)
 
         # connect signals
         self.file_display.sRequestSave.connect(self.save_to_database)
@@ -197,6 +202,9 @@ class LabelingMainWindow(QMainWindow):
         self.labels_list.sCsvFilesDropped.connect(self.import_dropped_label_tables)
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
+
+        self.menubar.sUndo.connect(self.file_display.annotations.undo)
+        self.menubar.sRedo.connect(self.file_display.annotations.redo)
 
     def show_duplicate_warning(self, filename: str):
         QMessageBox.warning(self, "Duplicate File",
@@ -247,14 +255,15 @@ class LabelingMainWindow(QMainWindow):
     def apply_settings(self, settings: list):
         """applies the settings"""
         font_size = None
+        theme_changed = False
         for setting in settings:
             if setting[0] == "Autosave on file change":
-                self.autoSave = setting[1]
+                self.autoSave = normalize_setting_value(setting[1])
             elif setting[0] == "Mark annotated files":
-                self.file_list.show_check_box = setting[1]
+                self.file_list.show_check_box = normalize_setting_value(setting[1])
                 self.sRequestUpdate.emit(self.img_idx)
             elif setting[0] == "Display patient name":
-                self.file_display.patient_label.setVisible(setting[1])
+                self.file_display.patient_label.setVisible(normalize_setting_value(setting[1]))
             elif setting[0] == "Font size":
                 value = str(setting[1]).lower()
                 if value == "small":
@@ -265,10 +274,10 @@ class LabelingMainWindow(QMainWindow):
                     font_size = FONT_MEDIUM
 
         if font_size is not None:
-            font = QFont()
+            font = QFont(QApplication.instance().font())
             font.setPointSize(font_size)
             QApplication.instance().setFont(font)
-            self.file_list.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=font_size))
+            self.file_list.tab.setStyleSheet(get_tab_stylesheet(font_size))
             self.file_list.search_field.setFont(font)
             self.file_list.image_list.setFont(font)
             self.file_list.wsi_list.setFont(font)
@@ -277,8 +286,19 @@ class LabelingMainWindow(QMainWindow):
 
             for button in self.toolBar.findChildren(QToolButton):
                 button.setFont(font)
+                self.toolBar.update_button_sizes()
+
+        if theme_changed:
+            self.refresh_theme()
 
         self.sUpdateSettings.emit(settings)
+
+    def refresh_theme(self):
+        """re-applies all theme-dependent stylesheets after a dark-mode toggle"""
+        self.labels_list.refresh_theme()
+        self.file_list.refresh_theme()
+        self.toolBar.refresh_theme()
+        self.polygons.refresh_theme()
 
     def change_detected(self, change: int):
         """appends the detected change to the changes list"""
@@ -468,9 +488,13 @@ class LabelingMainWindow(QMainWindow):
 
     def save_to_database(self):
         """stores the current state of the image to the database"""
-        annotations = list(self.file_display.annotations.annotations.values())
+        annotations = [
+            shape for shape in self.file_display.annotations.annotations.values()
+            if shape.isVisible()
+        ]    
         self.changes.clear()
         self.sSaveToDatabase.emit(annotations, self.img_idx)
+        self.file_display.annotations.clear_history()
 
     def set_no_files_screen(self, b: bool):
         """ either hides the default label or the image display"""
@@ -526,7 +550,7 @@ class LabelingMainWindow(QMainWindow):
                           "Select",
                           lambda: (self.file_display.annotations.set_mode(0),
                                    self.file_display.annotations.set_type('polygon')),
-                          icon="mouse",
+                          icon="arrow_tool",
                           tip="Select items in the image",
                           checkable=True,
                           checked=True),
@@ -534,42 +558,42 @@ class LabelingMainWindow(QMainWindow):
                           "Polygon",
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('polygon')),
-                          icon="polygon",
+                          icon="polygon_tool",
                           tip="Draw Polygon",
                           checkable=True),
                    Action(self,
                           "Trace",
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('trace')),
-                          icon="outline",
+                          icon="trace",
                           tip="Trace Outline",
                           checkable=True),
                    Action(self,
                           "Ellipse",
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('ellipse')),
-                          icon="ellipse",
+                          icon="ellipse_tool",
                           tip="Draw Ellipse",
                           checkable=True),
                     Action(self,
                           "Circle",
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('circle')),
-                          icon="circle",
+                          icon="circle_tool",
                           tip="Draw Circle",
                           checkable=True),
                    Action(self,
                           "Rectangle",
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('rectangle')),
-                          icon="square",
+                          icon="rect_tool",
                           tip="Draw Rectangle",
                           checkable=True),                 
                     Action(self,
                            "Point",
                            lambda: (self.file_display.annotations.set_mode(1), 
                                     self.file_display.annotations.set_type('point')),
-                            icon="point",
+                            icon="point_tool",
                            tip="Draw Point",
                            checkable=True))
         actions = list(actions)
@@ -581,7 +605,7 @@ class LabelingMainWindow(QMainWindow):
                           lambda: (self.file_display.annotations.set_mode(0),
                                    self.file_display.annotations.set_type('polygon'),
                                    self.file_display.slide_viewer.setAnnotationMode(False)),
-                          icon="mouse",
+                          icon="arrow_tool",
                           tip="Select items in the image",
                           checkable=True,
                           checked=True),
@@ -590,7 +614,7 @@ class LabelingMainWindow(QMainWindow):
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('polygon'),
                                    self.file_display.slide_viewer.setAnnotationMode(True)),
-                          icon="polygon",
+                          icon="polygon_tool",
                           tip="Draw Polygon",
                           checkable=True),
                    Action(self,
@@ -598,7 +622,7 @@ class LabelingMainWindow(QMainWindow):
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('trace'),
                                    self.file_display.slide_viewer.setAnnotationMode(True)),
-                          icon="outline",
+                          icon="trace",
                           tip="Trace Outline",
                           checkable=True),
                    Action(self,
@@ -606,7 +630,7 @@ class LabelingMainWindow(QMainWindow):
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('ellipse'),
                                    self.file_display.slide_viewer.setAnnotationMode(True)),
-                          icon="ellipse",
+                          icon="ellipse_tool",
                           tip="Draw Ellipse",
                           checkable=True),
                     Action(self,
@@ -614,7 +638,7 @@ class LabelingMainWindow(QMainWindow):
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('circle'),
                                    self.file_display.slide_viewer.setAnnotationMode(True)),
-                          icon="circle",
+                          icon="circle_tool",
                           tip="Draw Circle",
                           checkable=True),
                    Action(self,
@@ -622,7 +646,7 @@ class LabelingMainWindow(QMainWindow):
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('rectangle'),
                                    self.file_display.slide_viewer.setAnnotationMode(True)),
-                          icon="square",
+                          icon="rect_tool",
                           tip="Draw Rectangle",
                           checkable=True),
                     Action(self,
@@ -630,7 +654,7 @@ class LabelingMainWindow(QMainWindow):
                            lambda: (self.file_display.annotations.set_mode(1),
                                     self.file_display.annotations.set_type('point'),
                                     self.file_display.slide_viewer.setAnnotationMode(True)),
-                           icon="point",
+                           icon="point_tool",
                            tip="Draw Point",
                             checkable=True))
         actions = list(actions)

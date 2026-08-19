@@ -6,13 +6,15 @@ import csv
 import os
 from typing import List, Optional
 
-from taplt.utils.stylesheets import BASE_FONT_SIZE, BUTTON_STYLESHEET, TAB_STYLESHEET, SETTING_STYLESHEET
-
 from taplt.ui.shape import Shape
 from taplt.utils.qt import createListWidgetItemWithSquareIcon, get_icon
 from taplt.utils.label_table import validate_label_table_csv
 from taplt.utils.project_structure import Modality
-
+from taplt.utils.stylesheets import (
+    get_tab_stylesheet, SETTING_STYLESHEET, BASE_FONT_SIZE,
+    get_header_label_stylesheet, get_list_widget_stylesheet,
+    get_button_stylesheet
+)
 
 class FileList(QListWidget):
     """ a list widget subclass to make use of context menu"""
@@ -26,6 +28,7 @@ class FileList(QListWidget):
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setItemAlignment(Qt.AlignmentFlag.AlignLeft)
         self.setAcceptDrops(True)
+        self.setStyleSheet(get_list_widget_stylesheet())
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         item = self.itemAt(event.pos())
@@ -69,6 +72,9 @@ class FileList(QListWidget):
 
         event.acceptProposedAction()
 
+    def refresh_theme(self):
+        self.setStyleSheet(get_list_widget_stylesheet())
+
 
 class LabelList(QListWidget):
     """ a list widget to store annotation labels"""
@@ -76,6 +82,7 @@ class LabelList(QListWidget):
         super().__init__(*args)
         self._icon_size = 10
         self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setStyleSheet(get_list_widget_stylesheet())
 
     def contextMenuEvent(self, event) -> None:
         pos = event.pos()
@@ -102,6 +109,9 @@ class LabelList(QListWidget):
             col = lbl.line_color
             item = createListWidgetItemWithSquareIcon(txt, col, self._icon_size)
             self.addItem(item)
+
+    def refresh_theme(self):
+        self.setStyleSheet(get_list_widget_stylesheet())
 
 
 class CsvDropTable(QTableWidget):
@@ -150,7 +160,7 @@ class LabelTableWidget(QWidget):
         self._filename_col_index = 1
 
         self.import_button = QPushButton("Import CSV")
-        self.import_button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE))
+        self.import_button.setStyleSheet(get_button_stylesheet(BASE_FONT_SIZE))
         self.import_button.clicked.connect(self.sImportRequested.emit)
         self.layout().addWidget(self.import_button)
 
@@ -219,14 +229,14 @@ class LabelsViewingWidget(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
         self.file_label = QLabel()
-        self.file_label.setStyleSheet("background-color: rgb(186, 189, 182);")
+        self.file_label.setStyleSheet(get_header_label_stylesheet())
         self.file_label.setText("Labels")
         self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(self.file_label)
 
         self.tab = QTabWidget()
         self.tab.setContentsMargins(0, 0, 0, 0)
-        self.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=BASE_FONT_SIZE))
+        self.tab.setStyleSheet(get_tab_stylesheet(BASE_FONT_SIZE))
 
         self.label_list = LabelList()
         self.label_list.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
@@ -237,6 +247,10 @@ class LabelsViewingWidget(QWidget):
         self.layout().addWidget(self.tab)
 
         self.label_table.sCsvFilesDropped.connect(self.sCsvFilesDropped.emit)
+
+    def refresh_theme(self):
+        self.file_label.setStyleSheet(get_header_label_stylesheet())
+        self.label_list.refresh_theme()
 
 
 class FileViewingWidget(QWidget):
@@ -252,14 +266,14 @@ class FileViewingWidget(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
         self.file_label = QLabel()
-        self.file_label.setStyleSheet("background-color: rgb(186, 189, 182);")
+        self.file_label.setStyleSheet(get_header_label_stylesheet())
         self.file_label.setText("File List")
         self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(self.file_label)
 
         self.tab = QTabWidget()
         self.tab.setContentsMargins(0, 0, 0, 0)
-        self.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=BASE_FONT_SIZE))
+        self.tab.setStyleSheet(get_tab_stylesheet(BASE_FONT_SIZE))
         self.search_field = QTextEdit()
 
         # Size Policy
@@ -269,7 +283,7 @@ class FileViewingWidget(QWidget):
         size_policy.setHeightForWidth(self.search_field.sizePolicy().hasHeightForWidth())
         self.search_field.setSizePolicy(size_policy)
         self.search_field.setMaximumHeight(25)
-        font = QFont()
+        font = self.search_field.font()
         font.setPointSize(BASE_FONT_SIZE)
         font.setKerning(True)
 
@@ -298,6 +312,13 @@ class FileViewingWidget(QWidget):
         self.image_list.sDeleteFile.connect(self.sDeleteFile.emit)
         self.wsi_list.sDeleteFile.connect(self.sDeleteFile.emit)
         self.search_field.textChanged.connect(self.search_text_changed)
+
+
+    def refresh_theme(self):
+        self.file_label.setStyleSheet(get_header_label_stylesheet())
+        self.tab.setStyleSheet(get_tab_stylesheet(BASE_FONT_SIZE))
+        self.image_list.refresh_theme()
+        self.wsi_list.refresh_theme()
 
     def file_selected(self):
         """gets the global index of the selected file and emits a signal"""
@@ -366,6 +387,16 @@ class FileViewingWidget(QWidget):
             else:
                 item.setHidden(False)
 
+def normalize_setting_value(value):
+        if isinstance(value, bool):
+         return value
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"true", "True"}:
+                return True
+            if lowered in {"false", "False"}:
+                return False
+        return bool(value)
 
 class SettingList(QListWidget):
     def __init__(self, settings):
@@ -374,7 +405,7 @@ class SettingList(QListWidget):
         self.setStyleSheet(SETTING_STYLESHEET)
         for setting in settings:
             item = QListWidgetItem(setting[0])
-            checked = Qt.CheckState.Checked if setting[1] else Qt.CheckState.Unchecked
+            checked = Qt.CheckState.Checked if normalize_setting_value(setting[1]) else Qt.CheckState.Unchecked
             item.setCheckState(checked)
             item.setToolTip(setting[2])
             self.addItem(item)

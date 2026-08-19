@@ -4,6 +4,7 @@ from PySide6.QtCore import *
 from typing import *
 
 from taplt.src.actions import Action
+from taplt.utils.stylesheets import get_toolbar_button_stylesheet, get_toolbar_background_stylesheet
 
 
 class Toolbar(QWidget):
@@ -20,13 +21,12 @@ class Toolbar(QWidget):
         layout.setSpacing(4)
 
         self.setLayout(layout)
-        self.setFixedWidth(80)
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         self.actionsDict = {}  # This is a lookup table to match the buttons to the numbers they got added
 
         self.setAutoFillBackground(False)
-        self.setStyleSheet("background-color: rgb(186, 189, 182);")
+        self.setStyleSheet(get_toolbar_background_stylesheet())
         self.setObjectName("toolBar")
         self.button_group = QButtonGroup()
         self.button_group.setExclusive(True)
@@ -59,6 +59,23 @@ class Toolbar(QWidget):
     def exclusive_optional(self, btn: QToolButton):
         [x.setChecked(False) for x in self.button_group.buttons() if x != btn]
 
+    def update_button_sizes(self):
+        """Update toolbar and button sizes based on the buttons' size hints."""
+        max_width = 0
+
+        for button in self.button_group.buttons():
+            max_width = max(max_width, button.sizeHint().width())
+
+        if max_width == 0: # No buttons present, avoid setting width to 0
+            return
+
+        self._button_width = max_width
+
+        self.setFixedWidth(self._button_width)
+
+        for button in self.button_group.buttons():
+            button.setFixedSize(self._button_width, 70)
+
     def addAction(self, action: Action):
         r"""Because I want a physical button in the toolbar, i need to create a widget"""
         """if isinstance(action, QWidgetAction):
@@ -70,20 +87,11 @@ class Toolbar(QWidget):
             self.button_group.addButton(btn)
         btn.setDefaultAction(action)
         btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-        btn.setMinimumSize(80, 70)
-        btn.setMaximumSize(80, 70)
         btn.setIconSize(QSize(24, 24))
-        btn.setStyleSheet("""
-            QToolButton {
-                qproperty-iconSize: 24px 24px;
-            }
-            QToolButton::icon {
-                margin-top: 16px;
-            }
-                          
-        """)
+        btn.setStyleSheet(get_toolbar_button_stylesheet())
 
         self.layout().addWidget(btn)
+        self.update_button_sizes()
 
         """action_text = action.text().replace('\n', '')
         self.actionsDict[action_text] = len(self.actionsDict)"""
@@ -294,3 +302,11 @@ class Toolbar(QWidget):
                 return True
 
         return super().eventFilter(obj, event)
+
+    def refresh_theme(self):
+        """
+        re-applies theme-dependent styling to the toolbar and all its buttons
+        """
+        self.setStyleSheet(get_toolbar_background_stylesheet())
+        for btn in self.findChildren(QToolButton):
+            btn.setStyleSheet(get_toolbar_button_stylesheet())

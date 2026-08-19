@@ -16,6 +16,8 @@ class MenuBar(QMenuBar):
     sRequestSettings = Signal()
     sExampleProject = Signal()
     sPreviewDatabase = Signal(str)
+    sUndo = Signal()
+    sRedo = Signal()
 
     def __init__(self, parent: QMainWindow):
         super(MenuBar, self).__init__()
@@ -74,6 +76,19 @@ class MenuBar(QMenuBar):
                                  icon="settings",
                                  tip="Set your preferences for the program",)
 
+        action_undo = Action(self,
+                     "",
+                     lambda: self.sUndo.emit(),
+                     'Ctrl+Z',
+                     icon="arrow_left",
+                     tip="undo")
+        action_redo = Action(self,
+                     "",
+                     lambda: self.sRedo.emit(),
+                     'Ctrl+Y',
+                     icon="arrow_right",
+                     tip="restore")
+
         macros_example_project = Action(self,
                                         "Example Project",
                                         self.sExampleProject.emit)
@@ -98,6 +113,8 @@ class MenuBar(QMenuBar):
                         action_import_label_table,
                         action_quit,
                         action_settings,
+                        action_undo,
+                        action_redo,
                         macros_example_project,
                         macros_preview_annotations,
                         macros_preview_images,
@@ -125,6 +142,22 @@ class MenuBar(QMenuBar):
         self.addMenu(self.project)
         self.addMenu(self.edit)
         self.addMenu(self.macros)
+
+
+        self.nav_widget = QWidget()
+        self.nav_widget.setLayout(QHBoxLayout())
+        self.nav_widget.layout().setContentsMargins(0, 0, 215, 0)
+        self.nav_widget.layout().setSpacing(4)
+
+        undo_button = QToolButton()
+        undo_button.setDefaultAction(action_undo)
+        redo_button = QToolButton()
+        redo_button.setDefaultAction(action_redo)
+
+        self.nav_widget.layout().addWidget(undo_button)
+        self.nav_widget.layout().addWidget(redo_button)
+
+        self.setCornerWidget(self.nav_widget, Qt.Corner.TopRightCorner)
 
         self.enable_tools(["New Project", "Open Project", "Quit Program", "Example Project"])
 
