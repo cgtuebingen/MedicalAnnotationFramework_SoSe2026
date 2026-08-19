@@ -40,6 +40,7 @@ class LabelingMainWindow(QMainWindow):
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
     sRequestImportInfo = Signal()
+    sSendSpotsToDraw = Signal(object)
 
     @dataclass
     class Changes:
@@ -391,8 +392,7 @@ class LabelingMainWindow(QMainWindow):
             spots = [{"barcode":barcode,
                       "pxl_row":pxl_row_in_fullres,
                       "pxl_col":pxl_col_in_fullres} for [barcode,_,_,_,pxl_row_in_fullres,pxl_col_in_fullres] in f.to_numpy()]
-            print(f)
-            print(spots[0:10])
+            self.sSendSpotsToDraw.emit(spots[::10])
 
     def next_image(self, direction: int):
         """proceeds to the next/previous image"""

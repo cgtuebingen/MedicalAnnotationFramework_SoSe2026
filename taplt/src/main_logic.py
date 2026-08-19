@@ -26,6 +26,7 @@ class MainLogic:
         self.main_window.sUpdateSettings.connect(self.database.update_settings)
         self.main_window.sDisconnect.connect(self.disconnect)
         self.main_window.sRequestImportInfo.connect(self.database.send_import_info_for_drop)
+        self.main_window.sSendSpotsToDraw.connect(self.main_window.file_display.gen_expressions.recieveSpotsToDraw)
 
         # main window's menubar -> database
         self.main_window.menubar.sRequestImport.connect(self.database.send_import_info)
