@@ -16,7 +16,9 @@ from taplt.ui.annotation_tree import AnnotationTree
 from taplt.ui.welcome_screen import WelcomeScreen
 from taplt.utils.qt import colormap_rgb, get_icon
 from taplt.utils.project_structure import check_environment, Structure
-from taplt.utils.stylesheets import TAB_STYLESHEET, FONT_SMALL, FONT_MEDIUM, FONT_LARGE
+from taplt.utils.stylesheets import (get_tab_stylesheet, get_header_label_stylesheet,
+                                     OVERLAY_LABEL_STYLESHEET, set_theme,
+                                     FONT_SMALL, FONT_MEDIUM, FONT_LARGE, BASE_FONT_SIZE)
 from taplt.macros.macros import Macros
 from taplt.macros.macros_dialogs import PreviewDatabaseDialog
 from taplt import source_directory
@@ -76,12 +78,7 @@ class LabelingMainWindow(QMainWindow):
 
         # zoom label on top right side
         self.zoom_label = QLabel("100%", self.file_display)
-        self.zoom_label.setStyleSheet("""
-            background-color: rgba(0,0,0,150);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            """)
+        self.zoom_label.setStyleSheet(OVERLAY_LABEL_STYLESHEET)
         self.zoom_label.adjustSize()
         self.zoom_label.raise_()
         self.file_display.hide_button.setVisible(False)
@@ -114,7 +111,7 @@ class LabelingMainWindow(QMainWindow):
         self.poly_widget.layout().setContentsMargins(0, 0, 0, 0)
         self.poly_widget.layout().setSpacing(0)
         self.poly_label = QLabel(self)
-        self.poly_label.setStyleSheet("background-color: rgb(186, 189, 182);")
+        self.poly_label.setStyleSheet(get_header_label_stylesheet())
         self.poly_label.setText("Polygons")
         self.poly_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.poly_widget.layout().addWidget(self.poly_label)
@@ -231,6 +228,7 @@ class LabelingMainWindow(QMainWindow):
     def apply_settings(self, settings: list):
         """applies the settings"""
         font_size = None
+        theme_changed = False
         for setting in settings:
             if setting[0] == "Autosave on file change":
                 self.autoSave = normalize_setting_value(setting[1])
@@ -252,7 +250,7 @@ class LabelingMainWindow(QMainWindow):
             font = QFont(QApplication.instance().font())
             font.setPointSize(font_size)
             QApplication.instance().setFont(font)
-            self.file_list.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=font_size))
+            self.file_list.tab.setStyleSheet(get_tab_stylesheet(font_size))
             self.file_list.search_field.setFont(font)
             self.file_list.image_list.setFont(font)
             self.file_list.wsi_list.setFont(font)
@@ -263,7 +261,18 @@ class LabelingMainWindow(QMainWindow):
                 button.setFont(font)
                 self.toolBar.update_button_sizes()
 
+        if theme_changed:
+            self.refresh_theme()
+
         self.sUpdateSettings.emit(settings)
+
+    def refresh_theme(self):
+        """re-applies all theme-dependent stylesheets after a dark-mode toggle"""
+        self.poly_label.setStyleSheet(get_header_label_stylesheet())
+        self.labels_list.refresh_theme()
+        self.file_list.refresh_theme()
+        self.toolBar.refresh_theme()
+        self.polygons.refresh_theme()
 
     def change_detected(self, change: int):
         """appends the detected change to the changes list"""

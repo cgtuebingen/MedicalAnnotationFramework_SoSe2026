@@ -10,7 +10,7 @@ from taplt.ui.annotation_group import AnnotationGroup
 from taplt.ui.shape import Shape
 from taplt.utils.qt import get_icon
 from taplt.utils.project_structure import modality, Modality
-
+from taplt.utils.stylesheets import get_label_stylesheet
 
 class CenterDisplayWidget(QWidget):
     """ widget to manage the central display in the GUI
@@ -50,6 +50,7 @@ class CenterDisplayWidget(QWidget):
         # QLabel displaying the patient's id/name/alias
         self.patient_label = QLabel()
         self.patient_label.setContentsMargins(10, 0, 10, 0)
+        self.patient_label.setStyleSheet(get_label_stylesheet())
 
         self.hide_button = QPushButton(get_icon("next"), "", self)
         self.hide_button.setGeometry(0, 0, 40, 40)

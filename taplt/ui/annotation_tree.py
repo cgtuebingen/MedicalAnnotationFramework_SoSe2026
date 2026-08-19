@@ -6,6 +6,7 @@ from taplt.ui.dialogs import CommentDialog, DeleteAllMessageBox, DeleteClassMess
 from taplt.ui.shape import Shape
 
 from typing import List
+from taplt.utils.stylesheets import get_list_widget_stylesheet
 
 
 class TreeWidgetItem(QTreeWidgetItem):
@@ -31,6 +32,7 @@ class AnnotationTree(QTreeWidget):
 
         self.setColumnCount(2)
         self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setStyleSheet(get_list_widget_stylesheet())
         self.setHeaderLabels(["Annotation", "Your notes"])
 
         self.top = TreeWidgetItem(["Annotations", ""])
@@ -215,6 +217,11 @@ class AnnotationTree(QTreeWidget):
                         item.setCheckState(0, Qt.CheckState.Unchecked)
                     child.addChild(item)
 
+    
+    def refresh_theme(self):
+        """re-applies the theme-dependent stylesheet after a dark-mode toggle"""
+        self.setStyleSheet(get_list_widget_stylesheet())
+
 
 def create_square_icon(color: QColor, size: int = 10) -> QIcon:
     pixmap = QPixmap(size, size)
@@ -226,4 +233,6 @@ def create_square_icon(color: QColor, size: int = 10) -> QIcon:
     icon = QIcon(pixmap)
     painter.end()
     return icon
+
+
 

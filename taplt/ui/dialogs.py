@@ -9,7 +9,7 @@ import os
 
 from taplt.ui.list_widgets import LabelList, SettingList
 from taplt.utils.qt import get_icon
-from taplt.utils.stylesheets import BUTTON_STYLESHEET, BASE_FONT_SIZE
+from taplt.utils.stylesheets import get_button_stylesheet, BASE_FONT_SIZE
 
 
 class CloseMessageBox(QMessageBox):
@@ -269,14 +269,14 @@ class ProjectHandlerDialog(QDialog):
         # button to open up a FileDialog
         self.select_path_button = QPushButton()
         self.select_path_button.setFixedSize(QSize(40, 30))
-        self.select_path_button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE + 1))
+        self.select_path_button.setStyleSheet(get_button_stylesheet(BASE_FONT_SIZE))
         self.select_path_button.setText('...')
         self.select_path_button.clicked.connect(self.select_path)
 
         # button to add initial files
         self.add_files_button = QPushButton()
         self.add_files_button.setFixedWidth(180)
-        self.add_files_button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE + 1))
+        self.add_files_button.setStyleSheet(get_button_stylesheet(BASE_FONT_SIZE))
         self.add_files_button.setText("Add files to get started")
         self.add_files_button.clicked.connect(self.add_files)
 

@@ -4,6 +4,7 @@ from PySide6.QtCore import *
 from typing import *
 
 from taplt.src.actions import Action
+from taplt.utils.stylesheets import get_toolbar_button_stylesheet, get_toolbar_background_stylesheet
 
 
 class Toolbar(QWidget):
@@ -25,7 +26,7 @@ class Toolbar(QWidget):
         self.actionsDict = {}  # This is a lookup table to match the buttons to the numbers they got added
 
         self.setAutoFillBackground(False)
-        self.setStyleSheet("background-color: rgb(186, 189, 182);")
+        self.setStyleSheet(get_toolbar_background_stylesheet())
         self.setObjectName("toolBar")
         self.button_group = QButtonGroup()
         self.button_group.setExclusive(True)
@@ -87,11 +88,7 @@ class Toolbar(QWidget):
         btn.setDefaultAction(action)
         btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         btn.setIconSize(QSize(24, 24))
-        btn.setStyleSheet("""
-            QToolButton {
-                qproperty-iconSize: 24px 24px;
-            }      
-        """)
+        btn.setStyleSheet(get_toolbar_button_stylesheet())
 
         self.layout().addWidget(btn)
         self.update_button_sizes()
@@ -305,3 +302,11 @@ class Toolbar(QWidget):
                 return True
 
         return super().eventFilter(obj, event)
+
+    def refresh_theme(self):
+        """
+        re-applies theme-dependent styling to the toolbar and all its buttons
+        """
+        self.setStyleSheet(get_toolbar_background_stylesheet())
+        for btn in self.findChildren(QToolButton):
+            btn.setStyleSheet(get_toolbar_button_stylesheet())

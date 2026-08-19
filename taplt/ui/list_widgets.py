@@ -7,8 +7,10 @@ from typing import List
 
 from taplt.ui.shape import Shape
 from taplt.utils.qt import createListWidgetItemWithSquareIcon, get_icon
-from taplt.utils.stylesheets import TAB_STYLESHEET, SETTING_STYLESHEET, BASE_FONT_SIZE
-
+from taplt.utils.stylesheets import (
+    get_tab_stylesheet, SETTING_STYLESHEET, BASE_FONT_SIZE,
+    get_header_label_stylesheet, get_list_widget_stylesheet
+)
 
 class FileList(QListWidget):
     """ a list widget subclass to make use of context menu"""
@@ -22,6 +24,7 @@ class FileList(QListWidget):
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setItemAlignment(Qt.AlignmentFlag.AlignLeft)
         self.setAcceptDrops(True)
+        self.setStyleSheet(get_list_widget_stylesheet())
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         item = self.itemAt(event.pos())
@@ -65,6 +68,9 @@ class FileList(QListWidget):
 
         event.acceptProposedAction()
 
+    def refresh_theme(self):
+        self.setStyleSheet(get_list_widget_stylesheet())
+
 
 class LabelList(QListWidget):
     """ a list widget to store annotation labels"""
@@ -72,6 +78,7 @@ class LabelList(QListWidget):
         super().__init__(*args)
         self._icon_size = 10
         self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setStyleSheet(get_list_widget_stylesheet())
 
     def contextMenuEvent(self, event) -> None:
         pos = event.pos()
@@ -99,6 +106,9 @@ class LabelList(QListWidget):
             item = createListWidgetItemWithSquareIcon(txt, col, self._icon_size)
             self.addItem(item)
 
+    def refresh_theme(self):
+        self.setStyleSheet(get_list_widget_stylesheet())
+
 
 class LabelsViewingWidget(QWidget):
     """ a widget to hold a LabelList displaying the (unique) label class names"""
@@ -108,13 +118,17 @@ class LabelsViewingWidget(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
         self.file_label = QLabel()
-        self.file_label.setStyleSheet("background-color: rgb(186, 189, 182);")
+        self.file_label.setStyleSheet(get_header_label_stylesheet())
         self.file_label.setText("Labels")
         self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(self.file_label)
         self.label_list = LabelList()
         self.label_list.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.layout().addWidget(self.label_list)
+
+    def refresh_theme(self):
+        self.file_label.setStyleSheet(get_header_label_stylesheet())
+        self.label_list.refresh_theme()
 
 
 class FileViewingWidget(QWidget):
@@ -130,14 +144,14 @@ class FileViewingWidget(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
         self.file_label = QLabel()
-        self.file_label.setStyleSheet("background-color: rgb(186, 189, 182);")
+        self.file_label.setStyleSheet(get_header_label_stylesheet())
         self.file_label.setText("File List")
         self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(self.file_label)
 
         self.tab = QTabWidget()
         self.tab.setContentsMargins(0, 0, 0, 0)
-        self.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=BASE_FONT_SIZE))
+        self.tab.setStyleSheet(get_tab_stylesheet(BASE_FONT_SIZE))
         self.search_field = QTextEdit()
 
         # Size Policy
@@ -176,6 +190,13 @@ class FileViewingWidget(QWidget):
         self.image_list.sDeleteFile.connect(self.sDeleteFile.emit)
         self.wsi_list.sDeleteFile.connect(self.sDeleteFile.emit)
         self.search_field.textChanged.connect(self.search_text_changed)
+
+
+    def refresh_theme(self):
+        self.file_label.setStyleSheet(get_header_label_stylesheet())
+        self.tab.setStyleSheet(get_tab_stylesheet(BASE_FONT_SIZE))
+        self.image_list.refresh_theme()
+        self.wsi_list.refresh_theme()
 
     def file_selected(self):
         """gets the index of the selected file and emits a signal"""
