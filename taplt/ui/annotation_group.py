@@ -65,13 +65,17 @@ class AnnotationGroup(QGraphicsObject):
             scene_event = event
         else:
             scene = self.scene()
-            view = scene.views()[0] if scene and scene.views() else None
-            if view is None:
+            if scene is None:
                 return
 
             # map the event's global position into the view's viewport so the
             # resulting scene coordinate corresponds to the actual mouse tip
             # (not the widget-local center)
+            view = next((v for v in scene.views() if v.isVisible()), None)
+            if view is None:
+                view = scene.views()[0] if scene.views() else None
+            if view is None:
+                return
             scene_pos = view.mapToScene(view.viewport().mapFromGlobal(event.globalPosition().toPoint()))
             scene_event = QGraphicsSceneMouseEvent(QEvent.GraphicsSceneMousePress)
             scene_event.setPos(scene_pos)
