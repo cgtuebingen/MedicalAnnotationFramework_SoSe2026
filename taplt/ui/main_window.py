@@ -23,6 +23,8 @@ from taplt.macros.macros_dialogs import PreviewDatabaseDialog
 from taplt.ui.collapsible_box import CollapsibleBox
 
 NUM_COLORS = 25
+DEFAULT_RIGHT_PANEL_WIDTH = 280
+MIN_RIGHT_PANEL_WIDTH = 180
 
 class LabelingMainWindow(QMainWindow):
     """The main window for the application"""
@@ -95,7 +97,7 @@ class LabelingMainWindow(QMainWindow):
 
         # Right Menu
         self.right_menu_widget = QWidget()
-        self.right_menu_widget.setMaximumWidth(280)
+        self.right_menu_widget.setMinimumWidth(MIN_RIGHT_PANEL_WIDTH)
         self.right_menu_widget.setLayout(QVBoxLayout())
         self.right_menu_widget.layout().setContentsMargins(0, 0, 0, 0)
         self.right_menu_widget.layout().setSpacing(0)
@@ -120,8 +122,16 @@ class LabelingMainWindow(QMainWindow):
         self.right_menu_widget.layout().addWidget(self.polygons_section)
         self.right_menu_widget.layout().addWidget(self.file_list_section)
 
-        self.main_widget.layout().addWidget(self.center_frame)
-        self.main_widget.layout().addWidget(self.right_menu_widget)
+        self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.main_splitter.setHandleWidth(5)
+        self.main_splitter.setChildrenCollapsible(False)
+        self.main_splitter.addWidget(self.center_frame)
+        self.main_splitter.addWidget(self.right_menu_widget)
+        self.main_splitter.setStretchFactor(0, 1)
+        self.main_splitter.setStretchFactor(1, 0)
+        self.main_splitter.setSizes([self.width() - DEFAULT_RIGHT_PANEL_WIDTH, DEFAULT_RIGHT_PANEL_WIDTH])
+
+        self.main_widget.layout().addWidget(self.main_splitter)
         self.setCentralWidget(self.main_widget)
 
         self.menubar = MenuBar(self)
@@ -476,7 +486,7 @@ class LabelingMainWindow(QMainWindow):
         self.right_menu_widget.setHidden(b or not self.right_panel_toggle.isChecked())
         self.welcome_screen.setHidden(not b)
         self.zoom_label.setVisible(not b)
-        self.right_panel_toggle.setEnabled(not b)
+        self.right_panel_toggle.setVisible(not b)
 
     def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list, label_table_path: str = ""):
         """main updating function: all necessary information is passed to the main window"""
