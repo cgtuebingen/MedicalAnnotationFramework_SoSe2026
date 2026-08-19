@@ -28,7 +28,7 @@ class RulerWidget(QWidget):
         if self.orientation == self.HORIZONTAL:
             self.setFixedHeight(25)
         else:
-            self.setFixedWidth(25)
+            self.setFixedWidth(45)
         
         ruler_font = QFont(self.font())
         ruler_font.setPointSize(FONT_SMALL)
@@ -57,6 +57,7 @@ class RulerWidget(QWidget):
             self._paint_vertical(painter)
 
     def _paint_horizontal(self, painter: QPainter):
+        ''' Paints the horizontal ruler on the top of the widget.'''
         fm = painter.fontMetrics()
 
         # Distance between major ticks in pixels, adjusted by zoom factor
@@ -80,7 +81,7 @@ class RulerWidget(QWidget):
             painter.drawLine(x, self.height() - self.BOTTOM_MARGIN - self.MAJOR_TICK_HEIGHT, x, self.height() - self.BOTTOM_MARGIN)
 
             # Draw smaller tick marks between the major ticks
-            small_step = step // self.MINOR_TICKS_PER_SECTION
+            small_step = step / self.MINOR_TICKS_PER_SECTION
 
             for tick in range(1, self.MINOR_TICKS_PER_SECTION):
                 small_x = x + tick * small_step
@@ -99,6 +100,7 @@ class RulerWidget(QWidget):
         painter.drawLine(0, self.height() - 1, self.width(), self.height() - 1)
 
     def _paint_vertical(self, painter: QPainter):
+        ''' Paints the vertical ruler on the left side of the widget.'''
         fm = painter.fontMetrics()
 
         step = int(self.MAJOR_STEP * self.zoom_factor)
@@ -115,14 +117,14 @@ class RulerWidget(QWidget):
             text_x = max(2, tick_x - self.MAJOR_TICK_HEIGHT - self.LABEL_MARGIN - text_width)
 
             # Draw the label
-            text_y = y + fm.ascent() - fm.height() // 2
+            text_y = max(fm.ascent(), y + fm.ascent() - fm.height() / 2)
             painter.drawText(text_x, text_y, text)
 
             # Draw the tick mark
             painter.drawLine(self.width() - self.BOTTOM_MARGIN - self.MAJOR_TICK_HEIGHT, y, self.width() - self.BOTTOM_MARGIN, y)
 
             # Draw smaller tick marks between the major ticks
-            small_step = step // self.MINOR_TICKS_PER_SECTION
+            small_step = step / self.MINOR_TICKS_PER_SECTION
 
             for tick in range(1, self.MINOR_TICKS_PER_SECTION):
                 small_y = y + tick * small_step

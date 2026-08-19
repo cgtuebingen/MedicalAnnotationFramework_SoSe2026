@@ -56,7 +56,7 @@ class CenterDisplayWidget(QWidget):
         self.left_ruler = RulerWidget(RulerWidget.VERTICAL)
 
         self.corner = QLabel()
-        self.corner.setFixedSize(25, 25)
+        self.corner.setFixedSize(45, 25)
 
         self.hide_button = QPushButton(get_icon("next"), "", self)
         self.hide_button.setGeometry(0, 0, 40, 40)
