@@ -5,8 +5,6 @@ from PySide6.QtGui import *
 import os
 from typing import List
 
-from taplt.utils.stylesheets import BASE_FONT_SIZE
-
 from taplt.ui.shape import Shape
 from taplt.utils.qt import createListWidgetItemWithSquareIcon, get_icon
 from taplt.utils.stylesheets import TAB_STYLESHEET, SETTING_STYLESHEET, BASE_FONT_SIZE
@@ -149,7 +147,7 @@ class FileViewingWidget(QWidget):
         size_policy.setHeightForWidth(self.search_field.sizePolicy().hasHeightForWidth())
         self.search_field.setSizePolicy(size_policy)
         self.search_field.setMaximumHeight(25)
-        font = QFont()
+        font = self.search_field.font()
         font.setPointSize(BASE_FONT_SIZE)
         font.setKerning(True)
 
@@ -222,6 +220,16 @@ class FileViewingWidget(QWidget):
             else:
                 item.setHidden(False)
 
+def normalize_setting_value(value):
+        if isinstance(value, bool):
+         return value
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"true", "True"}:
+                return True
+            if lowered in {"false", "False"}:
+                return False
+        return bool(value)
 
 class SettingList(QListWidget):
     def __init__(self, settings):
@@ -230,7 +238,7 @@ class SettingList(QListWidget):
         self.setStyleSheet(SETTING_STYLESHEET)
         for setting in settings:
             item = QListWidgetItem(setting[0])
-            checked = Qt.CheckState.Checked if setting[1] else Qt.CheckState.Unchecked
+            checked = Qt.CheckState.Checked if normalize_setting_value(setting[1]) else Qt.CheckState.Unchecked
             item.setCheckState(checked)
             item.setToolTip(setting[2])
             self.addItem(item)

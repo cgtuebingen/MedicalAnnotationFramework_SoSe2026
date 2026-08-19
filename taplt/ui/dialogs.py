@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QMessageBox, QPushButton, QStyle, QDialog, QTextEdit, QDialogButtonBox, QVBoxLayout, \
     QLineEdit, QLabel, QFrame, QListWidgetItem, QListWidget, QHBoxLayout, QFileDialog, QComboBox
 from PySide6.QtCore import QSize, QPoint
-from PySide6.QtGui import Qt, QColor
+from PySide6.QtGui import Qt, QColor, QFont
 
 from typing import List
 from pathlib import Path
@@ -248,7 +248,10 @@ class ProjectHandlerDialog(QDialog):
 
         # Header for LineEdit
         self.header = QLabel()
-        self.header.setStyleSheet(f"font: bold {BASE_FONT_SIZE + 2}px")
+        font = QFont(self.header.font())
+        font.setPointSize(BASE_FONT_SIZE + 2)
+        font.setBold(True)
+        self.header.setFont(font)
         self.header.setText("Choose Project Location")
 
         # LineEdit where user can enter a path
@@ -437,7 +440,10 @@ class SettingDialog(QDialog):
         self.setWindowTitle("Settings")
 
         self.header = QLabel("Enter your preferences")
-        self.header.setStyleSheet(f"font: bold {BASE_FONT_SIZE + 2}px")
+        font = QFont(self.header.font())
+        font.setPointSize(BASE_FONT_SIZE + 2)
+        font.setBold(True)
+        self.header.setFont(font)
         boolean_settings = [s for s in settings if s[0] != "Font size"]
         self.preferences = SettingList(boolean_settings)
         self.settings = list()

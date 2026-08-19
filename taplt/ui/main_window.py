@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QAction, QFont, QKeySequence, QIcon
 
 from pathlib import Path
 from dataclasses import dataclass
@@ -19,6 +19,10 @@ from taplt.utils.project_structure import check_environment, Structure
 from taplt.utils.stylesheets import TAB_STYLESHEET, FONT_SMALL, FONT_MEDIUM, FONT_LARGE
 from taplt.macros.macros import Macros
 from taplt.macros.macros_dialogs import PreviewDatabaseDialog
+from taplt import source_directory
+import os
+
+from taplt.ui.list_widgets import normalize_setting_value
 
 NUM_COLORS = 25
 
@@ -47,6 +51,7 @@ class LabelingMainWindow(QMainWindow):
     def __init__(self):
         super(LabelingMainWindow, self).__init__()
         self.setWindowTitle("The All-Purpose Labeling Tool")
+        self.setWindowIcon(QIcon(os.path.join(source_directory, 'icons', 'logo2.png')))
         self.resize(1276, 968)
         self.setTabShape(QTabWidget.TabShape.Rounded)
 
@@ -150,7 +155,12 @@ class LabelingMainWindow(QMainWindow):
         self.autoSave = False
 
         self.macros = Macros()
+        
+        # welcome screen
         self.set_welcome_screen(True)
+
+        self.welcome_screen.sNewProject.connect(self.new_project)
+        self.welcome_screen.sOpenProject.connect(self.open_project)
 
         # connect signals
         self.file_display.sRequestSave.connect(self.save_to_database)
@@ -175,6 +185,16 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sExampleProject.connect(self.macros.example_project)
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
+
+        undo_action = QAction(self)
+        undo_action.setShortcut(QKeySequence("Ctrl+Z"))
+        undo_action.triggered.connect(self.file_display.annotations.undo)
+        self.addAction(undo_action)
+
+        redo_action = QAction(self)
+        redo_action.setShortcut(QKeySequence("Ctrl+Y"))
+        redo_action.triggered.connect(self.file_display.annotations.redo)
+        self.addAction(redo_action)
 
     def show_duplicate_warning(self, filename: str):
         QMessageBox.warning(self, "Duplicate File",
@@ -213,12 +233,12 @@ class LabelingMainWindow(QMainWindow):
         font_size = None
         for setting in settings:
             if setting[0] == "Autosave on file change":
-                self.autoSave = setting[1]
+                self.autoSave = normalize_setting_value(setting[1])
             elif setting[0] == "Mark annotated files":
-                self.file_list.show_check_box = setting[1]
+                self.file_list.show_check_box = normalize_setting_value(setting[1])
                 self.sRequestUpdate.emit(self.img_idx)
             elif setting[0] == "Display patient name":
-                self.file_display.patient_label.setVisible(setting[1])
+                self.file_display.patient_label.setVisible(normalize_setting_value(setting[1]))
             elif setting[0] == "Font size":
                 value = str(setting[1]).lower()
                 if value == "small":
@@ -229,7 +249,7 @@ class LabelingMainWindow(QMainWindow):
                     font_size = FONT_MEDIUM
 
         if font_size is not None:
-            font = QFont()
+            font = QFont(QApplication.instance().font())
             font.setPointSize(font_size)
             QApplication.instance().setFont(font)
             self.file_list.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=font_size))
@@ -241,6 +261,7 @@ class LabelingMainWindow(QMainWindow):
 
             for button in self.toolBar.findChildren(QToolButton):
                 button.setFont(font)
+                self.toolBar.update_button_sizes()
 
         self.sUpdateSettings.emit(settings)
 
@@ -394,9 +415,13 @@ class LabelingMainWindow(QMainWindow):
 
     def save_to_database(self):
         """stores the current state of the image to the database"""
-        annotations = list(self.file_display.annotations.annotations.values())
+        annotations = [
+            shape for shape in self.file_display.annotations.annotations.values()
+            if shape.isVisible()
+        ]    
         self.changes.clear()
         self.sSaveToDatabase.emit(annotations, self.img_idx)
+        self.file_display.annotations.clear_history()
 
     def set_no_files_screen(self, b: bool):
         """ either hides the default label or the image display"""
