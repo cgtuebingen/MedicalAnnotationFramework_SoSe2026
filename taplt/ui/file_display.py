@@ -8,7 +8,7 @@ from taplt.media_viewing_widgets.widgets.slide_viewer import SlideView
 
 from taplt.ui.annotation_group import AnnotationGroup
 from taplt.ui.shape import Shape
-from taplt.ui.ruler import RulerWidget
+from taplt.ui.ruler import RulerWidget, read_image_metadata, read_slide_metadata
 from taplt.utils.qt import get_icon
 from taplt.utils.project_structure import modality, Modality
 
@@ -56,6 +56,7 @@ class CenterDisplayWidget(QWidget):
         self.left_ruler = RulerWidget(RulerWidget.VERTICAL)
 
         self.corner = QLabel()
+        self.corner.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.corner.setFixedSize(45, 25)
 
         self.hide_button = QPushButton(get_icon("next"), "", self)
@@ -161,6 +162,23 @@ class CenterDisplayWidget(QWidget):
         self.scene.addItem(pixmap_item)
         self.scene.addItem(self.annotations)
 
+    def set_ruler_context_from_file(self, filepath: str):
+        """Sets the measurement context of the rulers based on the file type and its metadata."""
+        file_type = modality(filepath)
+
+        if file_type == Modality.slide:
+            context = read_slide_metadata(getattr(self.slide_viewer, "slide", None))
+        else:
+            context = read_image_metadata(filepath)
+
+        self.top_ruler.set_measurement_context(context)
+        self.left_ruler.set_measurement_context(context)
+        self.update_ruler_unit_label(context)
+
+    def update_ruler_unit_label(self, context):
+        """Updates the label in the corner of the rulers to reflect the current measurement unit."""
+        self.corner.setText(context.get("label", "px"))
+
     def switch_to_modality(self, filepath: str):
         """
         A function that switches to the modality based on the ``filepath`` parameter
@@ -178,7 +196,7 @@ class CenterDisplayWidget(QWidget):
             self.slide_viewer.setHidden(True)
 
             self.video_player.pause()
-
+            self.set_ruler_context_from_file(filepath)
             self.image_viewer.fitInView(rect)
 
         elif file_type == Modality.video:
@@ -192,6 +210,8 @@ class CenterDisplayWidget(QWidget):
             self.video_player.set_video(filepath)
             self.video_player.show()
             self.video_player.play()
+            self.top_ruler.set_measurement_context({"kind": "pixel", "unit": "px", "unit_per_pixel": 1.0, "label": "px"})
+            self.left_ruler.set_measurement_context({"kind": "pixel", "unit": "px", "unit_per_pixel": 1.0, "label": "px"})
 
         elif file_type == Modality.slide:
 
@@ -202,8 +222,8 @@ class CenterDisplayWidget(QWidget):
             self.slide_viewer.setHidden(False)
 
             self.video_player.pause()
-
             self.slide_viewer.load_slide(filepath)
+            self.set_ruler_context_from_file(filepath)
             self.slide_viewer.show()
 
         else:
