@@ -8,6 +8,7 @@ import os
 from typing import List, Union
 from taplt.utils.project_structure import modality, create_project_structure, Structure, Modality
 from taplt.utils.settings import SETTINGS, get_tooltip
+from taplt.utils.label_table import validate_label_table_csv
 
 from PySide6.QtCore import Signal, QObject, QSettings
 
@@ -78,9 +79,11 @@ DELETE_FILE_ANNOTATIONS = "DELETE FROM annotations WHERE modality = ? AND file =
 
 class SQLiteDatabase(QObject):
     """class to control an SQL database. inherits a QObject to enable pyqt-signal transfer"""
-    sUpdate = Signal(list, int, str, list, list)
+    sUpdate = Signal(list, int, str, list, list, str)
     sImportFile = Signal(list)
     sImportDroppedFiles = Signal(list)
+    sImportLabelTable = Signal()
+    sLabelTableImportError = Signal(str)
     sOpenSettings = Signal(list)
     sApplySettings = Signal(list)
     sPreviewDatabase = Signal(list, list)
@@ -140,6 +143,20 @@ class SQLiteDatabase(QObject):
             elif mod == Modality.slide:
                 shutil.copy(filepath, self.location + Structure.SLIDES_DIR)
                 self.cursor.execute(ADD_WSI, (os.path.basename(filepath), patient))
+
+    def add_label_table(self, filepath: str):
+        """copies a validated CSV label table into the project"""
+        if not self.is_initialized:
+            return
+
+        error = validate_label_table_csv(filepath)
+        if error:
+            self.sLabelTableImportError.emit(error)
+            return
+
+        destination = self.location + Structure.LABEL_TABLE_PATH
+        os.makedirs(os.path.dirname(destination), exist_ok=True)
+        shutil.copy2(filepath, destination)
 
     def add_label(self, label_class: str):
         """ add a new label class to database"""
@@ -365,18 +382,20 @@ class SQLiteDatabase(QObject):
 
     def prepare_files(self, files: list, moda: dict) -> list:
         """goes through all filenames and returns them as full paths,
-        in a tuple together with a boolean indicating whether there is at least 1 annotation in the image"""
+        together with a boolean indicating whether there is at least 1 annotation in the image,
+        and the modality (so the UI can route images vs. slides to the correct tab)"""
         result = list()
         for file in files:
             labels = self.get_label_from_file(file)
             populated = True if labels else False
-            if moda[file] == Modality.image:
-                file = self.location + Structure.IMAGES_DIR + file
-            elif moda[file] == Modality.video:
-                file = self.location + Structure.VIDEOS_DIR + file
+            m = moda[file]
+            if m == Modality.image:
+                file_path = self.location + Structure.IMAGES_DIR + file
+            elif m == Modality.video:
+                file_path = self.location + Structure.VIDEOS_DIR + file
             else:
-                file = self.location + Structure.SLIDES_DIR + file
-            result.append((file, populated))
+                file_path = self.location + Structure.SLIDES_DIR + file
+            result.append((file_path, populated, int(m)))
         return result
 
     def preview_database(self, table_name: str):
@@ -408,6 +427,9 @@ class SQLiteDatabase(QObject):
     def send_import_info_for_drop(self):
         existing_patients = self.get_patients()
         self.sImportDroppedFiles.emit(existing_patients)
+
+    def send_import_label_table(self):
+        self.sImportLabelTable.emit()
 
     def update_image_annotations(self, image_name: str, entries: list):
         """
@@ -449,7 +471,10 @@ class SQLiteDatabase(QObject):
             labels, patient = [], ""
         files = self.prepare_files(files, moda)
         classes = self.get_label_classes()
-        self.sUpdate.emit(files, img_idx, patient, classes, labels)
+        label_table_path = self.location + Structure.LABEL_TABLE_PATH
+        if not os.path.exists(label_table_path):
+            label_table_path = ""
+        self.sUpdate.emit(files, img_idx, patient, classes, labels, label_table_path)
 
     def update_labels(self, classes: list):
         """

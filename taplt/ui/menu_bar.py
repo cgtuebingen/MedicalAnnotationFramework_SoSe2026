@@ -11,6 +11,7 @@ class MenuBar(QMenuBar):
     sOpenProject = Signal()
     sCloseProject = Signal()
     sRequestImport = Signal()
+    sRequestImportLabelTable = Signal()
     sRequestSave = Signal()
     sRequestSettings = Signal()
     sExampleProject = Signal()
@@ -59,6 +60,11 @@ class MenuBar(QMenuBar):
                                'Ctrl+I',
                                "import",
                                "Import a new file to database")
+        action_import_label_table = Action(self,
+                                           "Import Label Table",
+                                           self.sRequestImportLabelTable.emit,
+                                           icon="import",
+                                           tip="Import a CSV label table for the project")
         action_quit = Action(self,
                              "Quit Program",
                              parent.close,
@@ -104,6 +110,7 @@ class MenuBar(QMenuBar):
                         action_close_project,
                         action_save,
                         action_import,
+                        action_import_label_table,
                         action_quit,
                         action_settings,
                         action_undo,
@@ -122,7 +129,8 @@ class MenuBar(QMenuBar):
                                  action_close_project))
 
         self.edit.addActions((action_save,
-                              action_import))
+                              action_import,
+                              action_import_label_table))
         self.macros.addAction(macros_example_project)
         self.preview.addActions((macros_preview_annotations,
                                  macros_preview_images,

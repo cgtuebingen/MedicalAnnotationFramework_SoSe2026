@@ -2,14 +2,18 @@ from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 
+import csv
 import os
-from typing import List
+from typing import List, Optional
 
 from taplt.ui.shape import Shape
 from taplt.utils.qt import createListWidgetItemWithSquareIcon, get_icon
+from taplt.utils.label_table import validate_label_table_csv
+from taplt.utils.project_structure import Modality
 from taplt.utils.stylesheets import (
     get_tab_stylesheet, SETTING_STYLESHEET, BASE_FONT_SIZE,
-    get_header_label_stylesheet, get_list_widget_stylesheet
+    get_header_label_stylesheet, get_list_widget_stylesheet,
+    get_button_stylesheet
 )
 
 class FileList(QListWidget):
@@ -110,8 +114,115 @@ class LabelList(QListWidget):
         self.setStyleSheet(get_list_widget_stylesheet())
 
 
+class CsvDropTable(QTableWidget):
+    sCsvFilesDropped = Signal(list)
+
+    def __init__(self):
+        super(CsvDropTable, self).__init__()
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        files = []
+        for url in event.mimeData().urls():
+            if url.isLocalFile():
+                filepath = url.toLocalFile()
+                if filepath.lower().endswith(".csv"):
+                    files.append(filepath)
+
+        if files:
+            self.sCsvFilesDropped.emit(files)
+
+        event.acceptProposedAction()
+
+
+class LabelTableWidget(QWidget):
+    """displays metadata rows imported from a label table CSV file"""
+    sImportRequested = Signal()
+    sCsvFilesDropped = Signal(list)
+
+    def __init__(self):
+        super(LabelTableWidget, self).__init__()
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
+        self._filename_col_index = 1
+
+        self.import_button = QPushButton("Import CSV")
+        self.import_button.setStyleSheet(get_button_stylesheet(BASE_FONT_SIZE))
+        self.import_button.clicked.connect(self.sImportRequested.emit)
+        self.layout().addWidget(self.import_button)
+
+        self.table = CsvDropTable()
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setFrameShape(QFrame.Shape.NoFrame)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.table.sCsvFilesDropped.connect(self.sCsvFilesDropped.emit)
+        self.layout().addWidget(self.table)
+
+    def clear_table(self):
+        self.table.clear()
+        self.table.setRowCount(0)
+        self.table.setColumnCount(0)
+
+    def load_csv(self, path: str) -> Optional[str]:
+        """loads a CSV file into the table; returns an error message or None on success"""
+        error = validate_label_table_csv(path)
+        if error:
+            return error
+
+        try:
+            with open(path, newline="", encoding="utf-8") as csv_file:
+                reader = csv.DictReader(csv_file)
+                headers = reader.fieldnames or []
+                rows = list(reader)
+        except OSError as exc:
+            return str(exc)
+
+        self.table.setColumnCount(len(headers))
+        self.table.setRowCount(len(rows))
+        self.table.setHorizontalHeaderLabels(headers)
+
+        if "filename" in headers:
+            self._filename_col_index = headers.index("filename")
+
+        for row_idx, row in enumerate(rows):
+            for col_idx, column in enumerate(headers):
+                item = QTableWidgetItem(row.get(column, ""))
+                self.table.setItem(row_idx, col_idx, item)
+
+        self.table.resizeColumnsToContents()
+        return None
+
+    def highlight_filename(self, filename: str):
+        """selects and scrolls to the row matching the given filename"""
+        basename = os.path.basename(filename)
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, self._filename_col_index)
+            if item and item.text() == basename:
+                self.table.selectRow(row)
+                self.table.scrollToItem(item, QAbstractItemView.ScrollHint.PositionAtCenter)
+                return
+
+
 class LabelsViewingWidget(QWidget):
-    """ a widget to hold a LabelList displaying the (unique) label class names"""
+    """ a widget to hold label classes and an imported label table"""
+    sCsvFilesDropped = Signal(list)
+
     def __init__(self):
         super(LabelsViewingWidget, self).__init__()
         self.setLayout(QVBoxLayout())
@@ -122,9 +233,20 @@ class LabelsViewingWidget(QWidget):
         self.file_label.setText("Labels")
         self.file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(self.file_label)
+
+        self.tab = QTabWidget()
+        self.tab.setContentsMargins(0, 0, 0, 0)
+        self.tab.setStyleSheet(get_tab_stylesheet(BASE_FONT_SIZE))
+
         self.label_list = LabelList()
         self.label_list.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
-        self.layout().addWidget(self.label_list)
+        self.label_table = LabelTableWidget()
+
+        self.tab.addTab(self.label_list, "Classes")
+        self.tab.addTab(self.label_table, "Table")
+        self.layout().addWidget(self.tab)
+
+        self.label_table.sCsvFilesDropped.connect(self.sCsvFilesDropped.emit)
 
     def refresh_theme(self):
         self.file_label.setStyleSheet(get_header_label_stylesheet())
@@ -199,35 +321,59 @@ class FileViewingWidget(QWidget):
         self.wsi_list.refresh_theme()
 
     def file_selected(self):
-        """gets the index of the selected file and emits a signal"""
+        """gets the global index of the selected file and emits a signal"""
         current_list = self.tab.currentWidget()
         if isinstance(current_list, FileList):
-            idx2 = current_list.currentRow()
-            self.sRequestFileChange.emit(idx2)
+            item = current_list.currentItem()
+            if item is not None:
+                global_idx = item.data(Qt.ItemDataRole.UserRole)
+                self.sRequestFileChange.emit(global_idx)
 
     def get_img_idx(self, filename: str) -> int:
-        """ searches through the ListWidget and returns the index of the item with the filename / -1 if not found"""
-        for i in range(self.image_list.count()):
-            item = self.image_list.item(i)
-            if item.text() == filename:
-                return i
+        """searches both lists and returns the global index of the item with the given filename / -1 if not found"""
+        for list_widget in (self.image_list, self.wsi_list):
+            for i in range(list_widget.count()):
+                item = list_widget.item(i)
+                if item.text() == filename:
+                    return item.data(Qt.ItemDataRole.UserRole)
         return -1
 
     def update_list(self, files: list, img_idx: int):
-        """ clears the list widget and fills it again with the provided filenames"""
+        """clears both list widgets and refills them, routing each file to the Images or WSI
+        tab based on its modality; each item stores its position in the combined files list
+        (the global index used everywhere else in the app) as UserRole data"""
         self.image_list.clear()
-        for file in files:
-            filename = os.path.basename(file[0])
+        self.wsi_list.clear()
 
-            # display check box if image is populated with at least 1 annotation
-            if self.show_check_box and file[1]:
+        for idx, file in enumerate(files):
+            filepath, populated = file[0], file[1]
+            mod = file[2] if len(file) > 2 else Modality.image
+            filename = os.path.basename(filepath)
+
+            if self.show_check_box and populated:
                 icon = get_icon("checked")
                 item = QListWidgetItem(icon, filename)
             else:
                 item = QListWidgetItem(filename)
-            self.image_list.addItem(item)
-        if self.image_list.count() > 0:
-            self.image_list.setCurrentRow(img_idx)
+            item.setData(Qt.ItemDataRole.UserRole, idx)
+
+            if mod == Modality.slide or mod == int(Modality.slide):
+                self.wsi_list.addItem(item)
+            else:
+                self.image_list.addItem(item)
+
+        self._select_global_index(img_idx)
+
+    def _select_global_index(self, global_idx: int):
+        """selects the item matching the given global index, switching to whichever
+        tab (Images or WSI) actually contains it"""
+        for list_widget in (self.image_list, self.wsi_list):
+            for row in range(list_widget.count()):
+                item = list_widget.item(row)
+                if item.data(Qt.ItemDataRole.UserRole) == global_idx:
+                    list_widget.setCurrentRow(row)
+                    self.tab.setCurrentWidget(list_widget)
+                    return
 
     def search_text_changed(self):
         """ filters the list regarding the user input in the search field"""
