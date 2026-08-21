@@ -19,6 +19,8 @@ class SlideView(QGraphicsView):
     sZoomChanged = Signal(float)
     sEnterPressed = Signal()
 
+    sViewChanged = Signal(float, float, float, float, float)
+
     def __init__(self, *args):
         super().__init__(*args)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -62,13 +64,14 @@ class SlideView(QGraphicsView):
         self.sqrt_thread_count = int(np.sqrt(self.max_threads))
         self.threads_finished = []
 
-        self.pixmapFinished.connect(self.set_pixmap)
 
         # Boolean that is set to true if there is a level crossing (or all patches have to be reloaded)
         self.level_crossing = True
         self.updating = False
         self.zoom_finished = True
         self.debug_counter = 0
+
+        self.last_offset_anchor = QPointF(0, 0)
 
     def load_slide(self, filepath: str, width: int = None, height: int = None):
         """
@@ -148,6 +151,7 @@ class SlideView(QGraphicsView):
             new_patches = self.check_for_new_patches()
 
             offset_anchor_point = self.anchor_point - QPoint(patch_width_slide, patch_height_slide)
+            self.last_offset_anchor = offset_anchor_point
 
             if any(new_patches):
                 self.updating = True
@@ -157,7 +161,7 @@ class SlideView(QGraphicsView):
                                                  patch_height_pix, patch_width_slide, patch_height_slide,
                                                  self.sqrt_thread_count, new_patches, self, self.max_threads,
                                                  self.slide,
-                                                 self.cur_level, self.image_patches, self.fused_image)
+                                                 self.cur_level, self.image_patches, self.fused_image)                
                 image_thread.finished.connect(self.set_pixmap)
                 image_thread.start()
 
@@ -284,9 +288,9 @@ class SlideView(QGraphicsView):
             self.pixmap_item.setScale(1 / self.cur_level_zoom)
             pix_move = (- self.pixmap_item.pos() + event.position())  * (1/ scale_factor - 1)
             self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
+            self.emit_view_params()
 
         self.update_pixmap()
-        
         zoom_factor = self.max_downsample / self.cur_downsample
         self.sZoomChanged.emit(zoom_factor)
 
@@ -333,6 +337,7 @@ class SlideView(QGraphicsView):
                            move.y() * self.cur_downsample)
             self.mouse_pos += move
             self.update_pixmap()
+            self.emit_view_params()
         super().mouseMoveEvent(event)
 
     def get_cur_zoomed_patch_width(self):
@@ -381,9 +386,27 @@ class SlideView(QGraphicsView):
         self.pixmap_compensation = QPointF(0, 0)
         self.updating = False
         self.zoom_finished = True
+        self.emit_view_params()
+
     def keyPressEvent(self, event) -> None:
         if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
             self.sEnterPressed.emit()
+    def emit_view_params(self):
+        if self.slide is None:
+            return
+        pos = self.pixmap_item.pos()
+        comp = self.pixmap_compensation
+        final_x = pos.x() + comp.x()
+        final_y = pos.y() + comp.y()
+        self.sViewChanged.emit(float(self.last_offset_anchor.x()),
+                               float(self.last_offset_anchor.y()),
+                               #float(self.pixmap_item.pos().x()),
+                               #float(self.pixmap_item.pos().y()),
+                               final_x,
+                               final_y,
+                               float(self.cur_downsample)
+        )
+
 
 
 class ImageBlockWrapper(QThread):

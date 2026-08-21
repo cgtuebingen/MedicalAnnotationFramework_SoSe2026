@@ -69,6 +69,8 @@ class CenterDisplayWidget(QWidget):
         self.slide_viewer.sEnterPressed.connect(self.on_enter_pressed)
 
         self.slide_viewer.sZoomChanged.connect(self.sZoomChanged)
+        self.slide_viewer.sViewChanged.connect(self.annotations.update_shape_positions)
+
     
     def on_enter_pressed(self):
             if self.annotations.pending_shapes:          
@@ -98,6 +100,14 @@ class CenterDisplayWidget(QWidget):
         self.annotations.classes = classes
 
         file_type = modality(filepath)
+
+        if file_type == Modality.slide:
+            if self.current_slide != filepath:
+                self.annotations.l0_coordinates.clear()
+                self.annotations.current_view_params = None
+            self.current_slide = filepath
+        else:
+            self.current_slide = None
 
         if not file_type == Modality.slide:
             pixmap = QPixmap(filepath)
