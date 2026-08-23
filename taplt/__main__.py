@@ -5,7 +5,7 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QFont, QFontDatabase
 from taplt.src.main_logic import MainLogic
-from taplt.utils.stylesheets import BASE_FONT_SIZE
+from taplt.utils.stylesheets import BASE_FONT_SIZE, sync_theme_with_system
 
 
 def main(_args):
@@ -21,7 +21,15 @@ def main(_args):
     font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
     global_font = QFont(font_family, BASE_FONT_SIZE)
     app.setFont(global_font)
-    _ = MainLogic()  # the labeling window
+
+    sync_theme_with_system()
+    main_logic = MainLogic()  # the labeling window
+
+    def on_scheme_changed(_scheme):
+        sync_theme_with_system()
+        main_logic.main_window.refresh_theme()
+
+    app.styleHints().colorSchemeChanged.connect(on_scheme_changed)
     sys.exit(app.exec())
 
 

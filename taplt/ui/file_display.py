@@ -11,7 +11,7 @@ from taplt.ui.shape import Shape
 from taplt.ui.ruler import RulerWidget, read_image_metadata, read_slide_metadata
 from taplt.utils.qt import get_icon
 from taplt.utils.project_structure import modality, Modality
-
+from taplt.utils.stylesheets import get_label_stylesheet
 
 class CenterDisplayWidget(QWidget):
     """ widget to manage the central display in the GUI
@@ -51,6 +51,7 @@ class CenterDisplayWidget(QWidget):
         # QLabel displaying the patient's id/name/alias
         self.patient_label = QLabel()
         self.patient_label.setContentsMargins(10, 0, 10, 0)
+        self.patient_label.setStyleSheet(get_label_stylesheet())
 
         self.top_ruler = RulerWidget(RulerWidget.HORIZONTAL)
         self.left_ruler = RulerWidget(RulerWidget.VERTICAL)
@@ -91,8 +92,11 @@ class CenterDisplayWidget(QWidget):
         self.slide_viewer.sEnterPressed.connect(self.on_enter_pressed)
 
         self.slide_viewer.sZoomChanged.connect(self.sZoomChanged)
+
         self.sZoomChanged.connect(self.top_ruler.set_zoom)
         self.sZoomChanged.connect(self.left_ruler.set_zoom)
+
+        self.slide_viewer.sViewChanged.connect(self.annotations.update_shape_positions)
     
     def on_enter_pressed(self):
             if self.annotations.pending_shapes:          
@@ -122,6 +126,14 @@ class CenterDisplayWidget(QWidget):
         self.annotations.classes = classes
 
         file_type = modality(filepath)
+
+        if file_type == Modality.slide:
+            if self.current_slide != filepath:
+                self.annotations.l0_coordinates.clear()
+                self.annotations.current_view_params = None
+            self.current_slide = filepath
+        else:
+            self.current_slide = None
 
         if not file_type == Modality.slide:
             pixmap = QPixmap(filepath)

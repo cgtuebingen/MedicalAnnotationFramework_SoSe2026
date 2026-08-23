@@ -3,7 +3,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFont
 
 from pathlib import Path
-from taplt.utils.stylesheets import BUTTON_STYLESHEET, BASE_FONT_SIZE
+from taplt.utils.stylesheets import get_button_stylesheet, BASE_FONT_SIZE
 
 
 class ExampleProjectDialog(QDialog):
@@ -23,7 +23,7 @@ class ExampleProjectDialog(QDialog):
         self.info.setFont(font)
 
         self.button = QPushButton("Show me an example project")
-        self.button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE + 1))
+        self.button.setStyleSheet(get_button_stylesheet(BASE_FONT_SIZE))
         self.button.clicked.connect(self.finish)
 
         self.layout().addWidget(self.info)
@@ -76,7 +76,7 @@ class PreviewDatabaseDialog(QDialog):
                 self.table.setItem(i, j, item)
 
         self.button = QPushButton("Close")
-        self.button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE + 1))
+        self.button.setStyleSheet(get_button_stylesheet(BASE_FONT_SIZE))
         self.button.setFixedSize(80, 60)
         self.button.pressed.connect(self.close)
 
