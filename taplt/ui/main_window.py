@@ -536,7 +536,7 @@ class LabelingMainWindow(QMainWindow):
 
         self.update_toolbar()
         QTimer.singleShot(50, self._reposition_zoom_label)
-        QTimer.singleShot(50, lambda: (self.zoom_label.setText("100%"), self.zoom_label.adjustSize()))
+        
         
     def update_toolbar(self):
         self.toolBar.adjustSize()

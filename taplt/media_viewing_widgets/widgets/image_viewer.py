@@ -21,6 +21,7 @@ class ImageViewer(QGraphicsView):
         # Protected Item
         self._scaling_factor = 5 / 4
         self._enableZoomPan = False
+        self._base_scale = 1.0
 
     def fitInView(self, rect: QRectF, mode: Qt.AspectRatioMode = Qt.AspectRatioMode.IgnoreAspectRatio) -> None:
         if not rect.isNull():
@@ -33,6 +34,7 @@ class ImageViewer(QGraphicsView):
                 factor = min(view_rect.width() / scene_rect.width(),
                              view_rect.height() / scene_rect.height())
                 self.scale(factor, factor)
+                self._base_scale = float(self.transform().m11())
                 self._emit_zoom()
 
     def resizeEvent(self, event: QResizeEvent) -> None:
@@ -66,7 +68,8 @@ class ImageViewer(QGraphicsView):
                 self.setDragMode(QGraphicsView.DragMode.NoDrag)
 
     def _emit_zoom(self):
-        current_zoom = float(self.transform().m11())
+        """emits the zoom level relative to the 'fit to view' scale"""
+        current_zoom = float(self.transform().m11()) / self._base_scale
         parent = self.parentWidget()
         if hasattr(parent, "sZoomChanged"):
             parent.sZoomChanged.emit(current_zoom)
