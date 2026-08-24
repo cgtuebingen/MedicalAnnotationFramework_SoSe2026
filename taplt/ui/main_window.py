@@ -517,6 +517,7 @@ class LabelingMainWindow(QMainWindow):
         self.welcome_screen.setHidden(not b)
         self.zoom_label.setVisible(not b)
         self.right_panel_toggle.setVisible(not b)
+        self.menubar.nav_widget.setVisible(not b)
 
     def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list, label_table_path: str = ""):
         """main updating function: all necessary information is passed to the main window"""
