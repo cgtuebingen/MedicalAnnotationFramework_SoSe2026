@@ -23,6 +23,10 @@ from taplt.macros.macros_dialogs import PreviewDatabaseDialog
 from taplt.ui.list_widgets import normalize_setting_value
 
 import pandas
+import h5py
+import numpy as np
+import scipy
+from scipy.sparse import csc_array, csr_array
 
 NUM_COLORS = 25
 
@@ -381,18 +385,106 @@ class LabelingMainWindow(QMainWindow):
         if dlg.settings:
             self.apply_settings(dlg.settings)
     def loadGenExpressions(self):
-        spatial_info, _ = QFileDialog.getOpenFileName(self,
+        spatial_path, _ = QFileDialog.getOpenFileName(self,
                                                 caption="Select GenExpressions csv",
-                                                dir=str(Path.home()),
+                                                dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",#str(Path.home()),
                                                 filter="Database (*.csv)",
                                                 options=QFileDialog.Option.DontUseNativeDialog)
-        if spatial_info:
-            print("Found data:\t"+spatial_info)
-            f = pandas.read_csv(spatial_info)  
+        if spatial_path:
+            print("Found data:\t"+spatial_path)
+            f = pandas.read_csv(spatial_path)  
             spots = [{"barcode":barcode,
                       "pxl_row":pxl_row_in_fullres,
                       "pxl_col":pxl_col_in_fullres} for [barcode,_,_,_,pxl_row_in_fullres,pxl_col_in_fullres] in f.to_numpy()]
             self.sSendSpotsToDraw.emit(spots[::10])
+        expression_path, _ = QFileDialog.getOpenFileName(self,
+                                                        caption="Select GenExpressions h5",
+                                                        dir=str("/".join(spatial_path.split("/")[:-2])+"/"),
+                                                        filter="Database (*.h5)",
+                                                        options=QFileDialog.Option.DontUseNativeDialog)
+        if expression_path:
+            expression_content = h5py.File(expression_path, 'r')
+            hd5f_keys = np.array(expression_content["matrix"])
+            print(list(hd5f_keys))
+            for key in hd5f_keys:
+                print(np.array(expression_content["matrix"][key]))
+            for key in hd5f_keys:
+                print(np.array(expression_content["matrix"][key]))
+            print(np.array(expression_content["matrix"][key]))
+            print([a for a in expression_content.keys()][0])
+            def read_row(row:int, expression_content):
+                '''Given a spot, find all the genes and their amount of appearence'''
+                matrix = expression_content["matrix"]
+                barcodes = matrix["barcodes"]
+                data = matrix["data"]
+                genes = matrix["features"]["name"]
+                indices = matrix["indices"]
+                indptr = matrix["indptr"]
+                shape_x, shape_y = matrix["shape"]
+                print(shape_x, shape_y)
+
+                barcode = barcodes[row]
+                print(barcode)
+                k,l = (indptr[row],indptr[row+1])
+                entries = data[k:l]
+                at_columns = indices[k:l]
+                j=0
+                result = np.array([])
+                for i in range(shape_x):
+                    if i == indices[j]:
+                        result = np.append(result, [entries[j]])
+                        j+=1
+                    else: result = np.append(result, [0])
+                return result
+            #row0 = read_row(0, expression_content)
+            #print(row0.nonzero())
+            #print([a for a in row0 if a != 0])
+
+
+            def read_col(col:int, matrix):
+                '''Given a gen, find all the spots where the gen appears and the amount'''
+                barcodes = matrix["barcodes"]
+                data = matrix["data"]
+                genes = matrix["features"]["name"]
+                indices = matrix["indices"]
+                indptr = matrix["indptr"]
+                shape_x, shape_y = matrix["shape"]
+
+                gen = genes[col]
+                print(gen)
+                data_np = np.array(data)
+                indices_np= np.array(indices)
+                indptr_np = np.array(indptr)
+                spots_of_gene_spared = np.where(indices_np == col)[0]
+                print(spots_of_gene_spared)
+                #spots_of_gene = np.array([])
+                spots_of_gene = []
+
+                j = 0
+                last_barcode_index = 0
+                for spot in spots_of_gene_spared:
+                    if spot < indptr_np[last_barcode_index+1]:
+                        spots_of_gene.append(int(data_np[spot]))
+                    else:
+                        while spot >= indptr_np[last_barcode_index+1]:
+                            if last_barcode_index<4: print(spot, last_barcode_index, indptr_np[last_barcode_index+1])
+                            last_barcode_index+=1
+                            spots_of_gene.append(0)
+                        spots_of_gene[-1] = int(data_np[spot])
+
+                        
+
+                """for spot in spots_of_gene_spared:
+                    while spot>j:#indptr_np[j+1]
+                        j+=1
+                        spots_of_gene.append(0)
+                        #spots_of_gene = np.append(spots_of_gene, [0])
+                    spots_of_gene.append(int(data_np[j]))
+                    #spots_of_gene = np.append(spots_of_gene, data_np[j])"""
+                return spots_of_gene
+            result =  read_col(2327, expression_content["matrix"])
+            print(result, len(result))
+            print("done")
 
     def next_image(self, direction: int):
         """proceeds to the next/previous image"""

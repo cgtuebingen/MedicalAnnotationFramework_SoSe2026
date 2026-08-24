@@ -102,26 +102,6 @@ class Shape(QGraphicsObject):
     def sceneEvent(self, event: QEvent) -> bool:
         return super(Shape, self).sceneEvent(event)
 
-    def circle_max_radius(self, center_pos:QPointF):
-        x_min = min(center_pos.x(), self.image_size.width() -center_pos.x())
-        y_min = min(center_pos.y(), self.image_size.height()-center_pos.y())
-        return min(x_min, y_min)
-    def circle_out_of_bounds_clip(self, center_pos: QPointF, new_point:QPointF):
-        max_radius = self.circle_max_radius(center_pos)
-        if max_radius == 0:
-            self.ungrabMouse()
-            self.sIllegalCircleOnBorder.emit()
-            return center_pos
-        x = center_pos.x()
-        y = center_pos.y()
-        x_delta = new_point.x() - x
-        y_delta = new_point.y() - y
-        requested_radius = math.sqrt(x_delta*x_delta+y_delta*y_delta)
-        ratio = requested_radius/max_radius 
-        if ratio>1:
-            x_delta /= ratio
-            y_delta /= ratio
-        return QPointF(x+x_delta, y+y_delta)
     def check_out_of_bounds(self, pos: QPointF):
         scene_pos = np.clip(np.array((pos.x(), pos.y())),
                             np.array((0, 0)),
@@ -381,6 +361,7 @@ class GenExpression(QGraphicsObject):
         for spot in spots:
             x = int(spot.get("pxl_row") / width * s.width())
             y = int(spot.get("pxl_col") / height * s.height())
+            # TODO Scalling by scalfactors.json
             point = [QPointF(x,y), QPointF(x+14,y)]
             shapes.append(Shape(image_size=QSize(int(s.width()), int(s.height())),
                                                         mode=Shape.ShapeMode.FIXED, # type: ignore

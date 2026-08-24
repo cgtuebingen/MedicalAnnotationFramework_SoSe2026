@@ -138,7 +138,6 @@ class CenterDisplayWidget(QWidget):
 
     @Slot(QGraphicsPixmapItem)
     def set_pixmap_to_slide(self, pixmap_item):
-        self.scene.removeItem(self.pixmap)
         self.scene.removeItem(self.annotations)
         self.scene.removeItem(self.gen_expressions)
         self.scene.addItem(pixmap_item)
