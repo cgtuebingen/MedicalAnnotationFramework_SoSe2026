@@ -21,6 +21,12 @@ class ImageViewer(QGraphicsView):
         # Protected Item
         self._scaling_factor = 5 / 4
         self._enableZoomPan = False
+        self._current_scale = 1.0
+        self._min_scale = 1.0
+        self._max_scale = 100000.0
+
+    def set_zoom_speed(self, factor: float):
+        self._scaling_factor = factor
 
     def fitInView(self, rect: QRectF, mode: Qt.AspectRatioMode = Qt.AspectRatioMode.IgnoreAspectRatio) -> None:
         if not rect.isNull():
@@ -34,6 +40,7 @@ class ImageViewer(QGraphicsView):
                              view_rect.height() / scene_rect.height())
                 self.scale(factor, factor)
                 self._emit_zoom()
+                self._min_scale = self.transform().m11()
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         bounds = self.scene().itemsBoundingRect()
@@ -45,7 +52,13 @@ class ImageViewer(QGraphicsView):
             if self._enableZoomPan:
                 factor = self._scaling_factor if event.angleDelta().y() > 0 else 1/self._scaling_factor
                 self.scale(factor, factor)
-            self._emit_zoom()
+                current_scale = self.transform().m11()
+                if current_scale < self._min_scale:
+                    correction = self._min_scale / current_scale
+                    self.scale(correction, correction)
+                elif current_scale > self._max_scale:
+                    correction = self._max_scale / current_scale
+                    self.scale(correction, correction)
 
     def keyPressEvent(self, event) -> None:
         if not self.b_isEmpty:
