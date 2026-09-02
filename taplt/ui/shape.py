@@ -93,6 +93,8 @@ class Shape(QGraphicsObject):
         self.init_shape()
         self.scene_size: Tuple[float, float] = (1e7, 1e7)
         self.set_mode(mode)
+        self.finished_by_right_click = False
+
 
     def set_mode(self, mode: Union[ShapeMode, int]):
         self.mode = mode
@@ -166,6 +168,27 @@ class Shape(QGraphicsObject):
                             np.array((0, 0)),
                             (self.image_size.width(), self.image_size.height()))
         return QPointF(scene_pos[0], scene_pos[1])
+    
+    def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:\
+
+        if self.finished_by_right_click:
+            self.finished_by_right_click = False
+            event.accept()
+            return
+
+        if self.mode == Shape.ShapeMode.CREATE:
+            event.ignore()
+            return
+        pos = event.screenPos()
+        menu = QMenu()
+
+        action = QAction("Delete")
+        action.triggered.connect(self.deleted.emit)
+        menu.addAction(action)
+
+        self.setSelected(True)
+        self.selected.emit()
+        menu.exec(pos)
 
     @Slot(QGraphicsSceneMouseEvent)
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
@@ -210,8 +233,9 @@ class Shape(QGraphicsObject):
             if self.shape_type == "polygon":
                 can_finish = (self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1)
             else:
-                can_finish = len(self.vertices.vertices) > 0
+                can_finish = (self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 0)
             if can_finish:
+                self.finished_by_right_click = True
                 self.ungrabMouse()
                 self.is_closed_path = True
                 self.set_mode(Shape.ShapeMode.FIXED)
