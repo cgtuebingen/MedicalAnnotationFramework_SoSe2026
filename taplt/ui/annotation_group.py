@@ -124,9 +124,9 @@ class AnnotationGroup(QGraphicsObject):
                     self.remove_shapes([self.temp_shape])
                 self.temp_shape.sIllegalCircleOnBorder.connect(delete)
             if self.shapeType == Shape.ShapeType.POLYGON:
-                self.sToolTip.emit("Press right click to end the annotation.")
+                self.sToolTip.emit("Right click to end the annotation.")
             else:
-                self.sToolTip.emit("Press left click a 2nd time to end the annotation.")       
+                self.sToolTip.emit("Click to end the annotation.")       
             self.temp_shape.grabMouse()
             if event is not None:
                 self.forward_click(event)

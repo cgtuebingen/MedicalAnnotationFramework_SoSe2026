@@ -166,7 +166,6 @@ class Shape(QGraphicsObject):
                             np.array((0, 0)),
                             (self.image_size.width(), self.image_size.height()))
         return QPointF(scene_pos[0], scene_pos[1])
-    
 
     @Slot(QGraphicsSceneMouseEvent)
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
@@ -208,12 +207,17 @@ class Shape(QGraphicsObject):
             else:
                 event.ignore()
         elif event.button() == Qt.MouseButton.RightButton:
-            if self.shape_type == "polygon" and self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1:
+            if self.shape_type == "polygon":
+                can_finish = (self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1)
+            else:
+                can_finish = len(self.vertices.vertices) > 0
+            if can_finish:
                 self.ungrabMouse()
                 self.is_closed_path = True
                 self.set_mode(Shape.ShapeMode.FIXED)
                 self.drawingDone.emit()
                 event.accept()
+                return
 
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
