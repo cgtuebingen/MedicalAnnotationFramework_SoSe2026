@@ -55,6 +55,7 @@ class AnnotationGroup(QGraphicsObject):
     @Slot()
     def set_drawing_to_false(self):
         self.drawing = False
+        self.temp_shape = None
         if self.pending_shapes:
             self.sToolTip.emit("Press Enter to label all annotations.")
         else: 
