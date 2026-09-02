@@ -6,6 +6,7 @@ from PySide6.QtWidgets import *
 class ImageViewer(QGraphicsView):
     sNextFile = Signal(int)
     sEnterPressed = Signal()
+    sEscapePressed = Signal()
 
     def __init__(self, *args):
         super(ImageViewer, self).__init__(*args)
@@ -58,6 +59,8 @@ class ImageViewer(QGraphicsView):
                 self.sNextFile.emit(1)
             elif event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
                 self.sEnterPressed.emit()
+            elif event.key() == Qt.Key.Key_Escape:
+                self.sEscapePressed.emit()
 
     def keyReleaseEvent(self, event) -> None:
         if not self.b_isEmpty:

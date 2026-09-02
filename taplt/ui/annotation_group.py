@@ -183,6 +183,14 @@ class AnnotationGroup(QGraphicsObject):
         """
         if shapes is None:
             return
+        if isinstance(shapes, Shape) and shapes is self.temp_shape:
+            self.cancel_drawing()
+            return
+        if isinstance(shapes, list) and self.temp_shape in shapes:
+            self.cancel_drawing()
+            shapes = [s for s in shapes if s is not self.temp_shape]
+            if not shapes:
+                return
         if isinstance(shapes, Shape):
             dlg = DeleteShapeMessageBox(shapes.label)
             dlg.exec()
@@ -202,7 +210,25 @@ class AnnotationGroup(QGraphicsObject):
                 updated_pending_shapes.append(shape)
         self.pending_shapes = updated_pending_shapes
         self.updateShapes.emit(list(self.annotations.values()))
-
+    
+    def cancel_drawing(self):
+        "cancels current drawing and removes the temp shape from the scene and group"
+        if not self.drawing or self.temp_shape is None:
+            return
+        shape = self.temp_shape
+        self.drawing = False
+        if shape.scene() is not None:
+            shape.scene().removeItem(shape)
+        ids_to_remove = [s_id for s_id, s in self.annotations.items() if s is shape]
+        for s_id in ids_to_remove:
+            self.annotations.pop(s_id)
+        if shape in self.pending_shapes:
+            self.pending_shapes.remove(shape)
+        
+        shape.deleteLater()
+        self.temp_shape = None
+        self.updateShapes.emit(list(self.annotations.values()))
+        
     def clear(self):
         """
         Clears the group and scene of shapes
