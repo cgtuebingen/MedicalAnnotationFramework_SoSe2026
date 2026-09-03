@@ -136,6 +136,11 @@ class LabelingMainWindow(QMainWindow):
 
         self.menubar = MenuBar(self)
         self.setMenuBar(self.menubar)
+        self.corner_container = QWidget()
+        self.corner_container.setLayout(QHBoxLayout())
+        self.corner_container.layout().setContentsMargins(0, 0, 8, 0)
+        self.corner_container.layout().setSpacing(4)
+        self.corner_container.layout().addWidget(self.menubar.nav_widget)
         self.right_panel_toggle = QToolButton(self)
         self.right_panel_toggle.setText("☰")
         self.right_panel_toggle.setCheckable(True)
@@ -143,7 +148,8 @@ class LabelingMainWindow(QMainWindow):
         self.right_panel_toggle.setToolTip("Show/hide side panel")
         self.right_panel_toggle.setStyleSheet("QToolButton { font-size: 16px; padding: 2px 8px; }")
         self.right_panel_toggle.clicked.connect(self.toggle_right_panel)
-        self.menubar.setCornerWidget(self.right_panel_toggle, Qt.TopRightCorner)
+        self.corner_container.layout().addWidget(self.right_panel_toggle)
+        self.menubar.setCornerWidget(self.corner_container, Qt.TopRightCorner)
         self.menubar.setVisible(True)
 
         self.statusbar = QStatusBar()
@@ -511,6 +517,7 @@ class LabelingMainWindow(QMainWindow):
         self.welcome_screen.setHidden(not b)
         self.zoom_label.setVisible(not b)
         self.right_panel_toggle.setVisible(not b)
+        self.menubar.nav_widget.setVisible(not b)
 
     def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list, label_table_path: str = ""):
         """main updating function: all necessary information is passed to the main window"""
@@ -536,7 +543,7 @@ class LabelingMainWindow(QMainWindow):
 
         self.update_toolbar()
         QTimer.singleShot(50, self._reposition_zoom_label)
-        QTimer.singleShot(50, lambda: (self.zoom_label.setText("100%"), self.zoom_label.adjustSize()))
+        
         
     def update_toolbar(self):
         self.toolBar.adjustSize()
