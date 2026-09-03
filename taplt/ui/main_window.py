@@ -77,8 +77,10 @@ class LabelingMainWindow(QMainWindow):
 
         self.welcome_screen = WelcomeScreen()
         self.file_display = CenterDisplayWidget()
+        self.file_display.parent_window = self
         self.file_display.sZoomChanged.connect(self.update_zoom_label)
 
+    
         # zoom label on top right side
         self.zoom_label = QLabel("100%", self.file_display)
         self.zoom_label.setStyleSheet(OVERLAY_LABEL_STYLESHEET)
@@ -299,6 +301,11 @@ class LabelingMainWindow(QMainWindow):
         self.file_list.refresh_theme()
         self.toolBar.refresh_theme()
         self.polygons.refresh_theme()
+        self.file_display.top_ruler.refresh_theme()
+        self.file_display.left_ruler.refresh_theme()
+        self.labels_section.refresh_theme()
+        self.polygons_section.refresh_theme()
+        self.file_list_section.refresh_theme()
 
     def change_detected(self, change: int):
         """appends the detected change to the changes list"""

@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QToolButton, QSizePolicy
 from PySide6.QtCore import Qt
+from taplt.utils.stylesheets import current_theme
 
 
 class CollapsibleBox(QWidget):
@@ -14,15 +15,7 @@ class CollapsibleBox(QWidget):
         self.toggle_button.setChecked(not start_collapsed)
         self.toggle_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.toggle_button.setArrowType(Qt.ArrowType.DownArrow if not start_collapsed else Qt.ArrowType.RightArrow)
-        self.toggle_button.setStyleSheet("""
-            QToolButton {
-                border: none;
-                background-color: rgb(186, 189, 182);
-                font-weight: bold;
-                padding: 4px;
-                text-align: left;
-            }
-        """)
+        self._apply_header_style()
         self.toggle_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.toggle_button.clicked.connect(self._on_toggle)
 
@@ -37,6 +30,23 @@ class CollapsibleBox(QWidget):
         layout.setSpacing(0)
         layout.addWidget(self.toggle_button)
         layout.addWidget(self.content_area)
+
+    def _apply_header_style(self):
+        c = current_theme()
+        self.toggle_button.setStyleSheet(f"""
+            QToolButton {{
+                border: none;
+                background-color: {c['bg_header']};
+                color: {c['text']};
+                font-weight: bold;
+                padding: 4px;
+                text-align: left;
+            }}
+        """)
+
+    def refresh_theme(self):
+        """re-applies the theme-dependent header stylesheet after a dark-mode toggle"""
+        self._apply_header_style()
 
     def setContentWidget(self, widget: QWidget):
         """Places the given widget inside the collapsible content area."""

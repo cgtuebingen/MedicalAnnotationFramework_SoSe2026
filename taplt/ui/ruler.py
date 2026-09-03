@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QWidget
 from PySide6.QtGui import QFont, QPainter, QColor
 from PySide6.QtCore import Qt
 
-from taplt.utils.stylesheets import FONT_SMALL
+from taplt.utils.stylesheets import FONT_SMALL, current_theme
 
 
 NICE_INTERVALS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000]
@@ -192,14 +192,15 @@ class RulerWidget(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
+        c = current_theme()
 
         pen = painter.pen()
-        pen.setColor(QColor(95, 95, 95))
+        pen.setColor(QColor(c["ruler_line"]))
         pen.setWidth(1)
         painter.setPen(pen)
 
         # Draw the ruler background
-        painter.fillRect(self.rect(), QColor(240, 240, 240))
+        painter.fillRect(self.rect(), QColor(c["ruler_bg"]))
 
         # Draw the ruler ticks and labels based on orientation
         if self.orientation == self.HORIZONTAL:
@@ -284,3 +285,7 @@ class RulerWidget(QWidget):
 
         # Draw the baseline at the bottom
         painter.drawLine(self.width() - 1, 0, self.width() - 1, self.height())
+
+    def refresh_theme(self):
+        """triggers a repaint so the ruler picks up the new theme colors"""
+        self.update()
