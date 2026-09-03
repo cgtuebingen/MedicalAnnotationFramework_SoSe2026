@@ -58,7 +58,7 @@ After starting the software, it is possible to create an example project to get 
 Select "Macros -> Example" Project in the Menubar to do so.
 
 ### Creating Projects
-Select "New Project" in the Menubar to open up the project manager. 
+Click on "Create new Project" on the Homescreen or select "Project -> New Project" in the Menubar to open up the project manager. 
 There, you can select a project directory and add your first images.
 To open this project in your next session, click "Open Project" and navigate to your project directory. 
 After selecting the database file, the project will open up again.
