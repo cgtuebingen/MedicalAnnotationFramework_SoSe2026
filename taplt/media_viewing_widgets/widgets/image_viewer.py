@@ -20,8 +20,10 @@ class ImageViewer(QGraphicsView):
 
         # Protected Item
         self._scaling_factor = 5 / 4
-        self._enableZoomPan = False
+
+        self._enablePan = False
         self._base_scale = 1.0
+
 
     def fitInView(self, rect: QRectF, mode: Qt.AspectRatioMode = Qt.AspectRatioMode.IgnoreAspectRatio) -> None:
         if not rect.isNull():
@@ -44,15 +46,15 @@ class ImageViewer(QGraphicsView):
     def wheelEvent(self, event):
         """Responsible for Zoom.Redefines base function"""
         if not self.b_isEmpty:
-            if self._enableZoomPan:
-                factor = self._scaling_factor if event.angleDelta().y() > 0 else 1/self._scaling_factor
-                self.scale(factor, factor)
+            
+            factor = self._scaling_factor if event.angleDelta().y() > 0 else 1/self._scaling_factor
+            self.scale(factor, factor)
             self._emit_zoom()
 
     def keyPressEvent(self, event) -> None:
         if not self.b_isEmpty:
             if event.key() == Qt.Key.Key_Control:
-                self._enableZoomPan = True
+                self._enablePan = True
                 self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
             elif event.key() == Qt.Key.Key_Left:
                 self.sNextFile.emit(-1)
@@ -64,7 +66,7 @@ class ImageViewer(QGraphicsView):
     def keyReleaseEvent(self, event) -> None:
         if not self.b_isEmpty:
             if event.key() == Qt.Key.Key_Control:
-                self._enableZoomPan = False
+                self._enablePan = False
                 self.setDragMode(QGraphicsView.DragMode.NoDrag)
 
     def _emit_zoom(self):
