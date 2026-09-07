@@ -482,15 +482,14 @@ class LabelingMainWindow(QMainWindow):
             self.apply_settings(dlg.settings)
     def loadGenExpressions(self):
         spatial_path, _ = QFileDialog.getOpenFileName(self,
-                                                caption="Select GenExpressions csv",
+                                                caption="Select GenExpressions csv tissue positions",
                                                 dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",#str(Path.home()),
                                                 filter="Database (*.csv)",
                                                 options=QFileDialog.Option.DontUseNativeDialog)
         if spatial_path:
-            print("Found data:\t"+spatial_path)
             self.sSendSpotsToDraw.emit(spatial_path)
             expression_path, _ = QFileDialog.getOpenFileName(self,
-                                                        caption="Select GenExpressions h5",
+                                                        caption="Select GenExpressions h5 Matrix",
                                                         dir=str("/".join(spatial_path.split("/")[:-2])+"/"),
                                                         filter="Database (*.h5)",
                                                         options=QFileDialog.Option.DontUseNativeDialog)

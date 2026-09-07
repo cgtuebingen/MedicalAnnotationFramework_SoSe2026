@@ -366,11 +366,9 @@ class GenExpression(QGraphicsObject):
         fiducial_diameter_fullres = 384.18505640709947
         spot_diameter_fullres = 256.12337093806633
         radius:float = (spots[1].get("pxl_col") - spots[0].get("pxl_col")) * tissue_hires_scalef /3.0
-        print(f"radius:\t{radius}")
         shapes:List[Shape] = []
         s = self.scene()
         
-        print(spots[0])
         for spot in spots:
             x = int(spot.get("pxl_col") * tissue_hires_scalef)
             y = int(spot.get("pxl_row") * tissue_hires_scalef)
@@ -387,84 +385,34 @@ class GenExpression(QGraphicsObject):
         expression_content = h5py.File(matrix_path, 'r')
         hd5f_keys = np.array(expression_content["matrix"])
         print(list(hd5f_keys))
-        #for key in hd5f_keys:
-        #    print(np.array(expression_content["matrix"][key]))
-        #for key in hd5f_keys:
-        #    print(np.array(expression_content["matrix"][key]))
-        #print(np.array(expression_content["matrix"]["features"]["name"]))
-        #print([a for a in expression_content.keys()][0])
         matrix  = expression_content["matrix"]
         self.matrix = matrix
         def decoder(a:bytes):
             return a.decode("utf-8")
         self.used_barcodes = np.array(list(map(decoder, matrix["barcodes"])))
         spots_barcodes = [a['barcode'] for a in self.spots]
-        print()
         j=len(self.used_barcodes)-1
         for i in range(len(self.spots)-1,-1,-1):
-            if i<10:
-                print(self.spots[i]["barcode"],self.used_barcodes[j], f"j={j}")
             if j>0 and self.spots[i]["barcode"]==self.used_barcodes[j] or self.spots[i]["barcode"] in self.used_barcodes:
                 j-=1
             else:
                 self.shapes[i].deleteLater()
+                self.shapes[i].disconnect(self.shapes[i])
                 self.shapes.pop(i)
                 spots_barcodes.pop(i)
-        #ids_to_remove = []
-        #        for shape_id in self.annotations:
-        #            if self.annotations[shape_id] in shapes:
-        #                ids_to_remove.append(shape_id)
-        #                self.annotations[shape_id].deleteLater()
-        #        [(self.annotations[x].disconnect(self.annotations[x]), self.annotations.pop(x)) for x in ids_to_remove]
         self.update()
         reordered_shapes = []
         reordered_spots = []
         spots_barcodes = np.array(spots_barcodes)
-        print(f"used_barcodes: {spots_barcodes}, {len(self.used_barcodes)}")
-        print(f"spots: {spots_barcodes}, {len(spots_barcodes)}")
         for barcode in self.used_barcodes:
             shape_index = np.where(barcode == spots_barcodes)[0][0]
-            print(shape_index)
             reordered_shapes.append(self.shapes[shape_index])
             reordered_spots.append(spots_barcodes[shape_index])
         self.shapes = reordered_shapes
-        print(f"used_barcodes: {self.used_barcodes}, {len(self.used_barcodes)}")
-        print(f"spots: {reordered_spots}, {len(reordered_spots)}")
 
         result =  self.read_col(2326, matrix)
         self.update()
         self.setColor(result)
-
-        
-
-        #print(result, len(result))
-        #row0 = read_row(0, expression_content)
-        #print(row0.nonzero())
-        #print([a for a in row0 if a != 0])
-    """def read_row(self, row:int, expression_content):
-        '''Given a spot, find all the genes and their amount of appearence'''
-        matrix = expression_content["matrix"]
-        barcodes = matrix["barcodes"]
-        data = matrix["data"]
-        genes = matrix["features"]["name"]
-        indices = matrix["indices"]
-        indptr = matrix["indptr"]
-        shape_x, shape_y = matrix["shape"]
-        print(shape_x, shape_y)
-
-        barcode = barcodes[row]
-        print(barcode)
-        k,l = (indptr[row],indptr[row+1])
-        entries = data[k:l]
-        at_columns = indices[k:l]
-        j=0
-        result = np.array([])
-        for i in range(shape_x):
-            if i == indices[j]:
-                result = np.append(result, [entries[j]])
-                j+=1
-            else: result = np.append(result, [0])
-        return result"""
 
     def setColor(self, gen_occurence:list[int]):
         max_amount = max(gen_occurence)
@@ -495,7 +443,6 @@ class GenExpression(QGraphicsObject):
                 spots_of_gene.append(int(data_np[spot]))
             else:
                 while spot >= indptr_np[last_barcode_index+1]:
-                    if last_barcode_index<4: print(spot, last_barcode_index, indptr_np[last_barcode_index+1])
                     last_barcode_index+=1
                     spots_of_gene.append(0)
                 spots_of_gene[-1] = int(data_np[spot])
