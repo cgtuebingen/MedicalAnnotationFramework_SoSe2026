@@ -47,12 +47,9 @@ class LabelingMainWindow(QMainWindow):
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
     sRequestImportInfo = Signal()
-<<<<<<< HEAD
     sSendSpotsToDraw = Signal(str)
     sSendMatrixOfGenesAndBarcodes = Signal(str)
-=======
     sAddLabelTable = Signal(str)
->>>>>>> 794ef19cf2221274aae51078f3755ebd645c1d39
 
     @dataclass
     class Changes:
@@ -212,12 +209,9 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sOpenProject.connect(self.open_project)
         self.menubar.sCloseProject.connect(self.close_project)
         self.menubar.sExampleProject.connect(self.macros.example_project)
-<<<<<<< HEAD
         self.menubar.sGenExpression.connect(self.loadGenExpressions)
-=======
         self.labels_list.label_table.sImportRequested.connect(self.menubar.sRequestImportLabelTable.emit)
         self.labels_list.sCsvFilesDropped.connect(self.import_dropped_label_tables)
->>>>>>> 794ef19cf2221274aae51078f3755ebd645c1d39
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
 
