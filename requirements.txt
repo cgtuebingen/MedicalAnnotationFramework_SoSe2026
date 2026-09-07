@@ -1,4 +1,5 @@
 numpy
+Pillow
 PySide6
 pytest
 flake8

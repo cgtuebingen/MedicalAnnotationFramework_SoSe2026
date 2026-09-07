@@ -11,8 +11,8 @@ from taplt.ui.shape import Shape
 from taplt.ui.toolbar import Toolbar
 from taplt.src.main_logic import MainLogic
 from taplt.utils.qt import colormap_rgb
-from taplt.utils.stylesheets import TAB_STYLESHEET, BASE_FONT_SIZE
-
+from taplt.utils.stylesheets import get_tab_stylesheet, BASE_FONT_SIZE
+from taplt.ui.welcome_screen import WelcomeScreen
 
 COLORS, _ = colormap_rgb(25)
 CLASSES = ["Tumour", "Blood", "Blood", "Vein", "Healthy Tissue", "Tumour", "Blood"]
@@ -153,31 +153,39 @@ def test_tab():
     w2.layout().addWidget(QLabel("Widget 2"))
     tab.addTab(w1, 'First')
     tab.addTab(w2, 'Second')
-    tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=BASE_FONT_SIZE))
+    tab.setStyleSheet(get_tab_stylesheet(BASE_FONT_SIZE))
     tab.show()
     app.exec()
 
 
 def test_toolbar():
     window = QMainWindow()
-    window.resize(400, 800)
+    window.setWindowTitle("Toolbar manual test")
+    window.resize(600, 700)
 
     center = QWidget()
-    center.setLayout(QVBoxLayout())
+    center.setStyleSheet("background-color: white;")
     window.setCentralWidget(center)
 
-    tb = Toolbar(center)
+    action_source = LabelingMainWindow()
+    toolbar = Toolbar(center)
+    toolbar.init_actions("image", action_source.define_img_actions())
+    toolbar.switch_modality("image")
+    toolbar.toggle_button.setChecked(True)
+    toolbar._toggle_visibility(True)
+    toolbar.move(12, 80)
 
-    mw = LabelingMainWindow()
-    tb.init_actions("image", mw.define_img_actions())
-    tb.switch_modality("image")
-
-    tb.move(10, 10)
-    tb.show()
-    
     window.show()
+    toolbar.raise_()
     app.exec()
 
+def test_welcome_screen():
+
+    screen = WelcomeScreen()
+    screen.sNewProject.connect(lambda: print("New Project clicked"))
+    screen.sOpenProject.connect(lambda: print("Open Project clicked"))
+    screen.show()
+    app.exec()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -196,8 +204,9 @@ if __name__ == "__main__":
     # test_label_list()
     # test_dialog_delete_class()
     # test_file_viewing_widget()
-    test_tree_widget()
+    # test_tree_widget()
     # test_dialog_new_label()
     # test_image_display()
     test_toolbar()
     # test_main_window()
+    # test_welcome_screen()

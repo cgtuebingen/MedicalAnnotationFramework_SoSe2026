@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QMessageBox, QPushButton, QStyle, QDialog, QTextEdit, QDialogButtonBox, QVBoxLayout, \
     QLineEdit, QLabel, QFrame, QListWidgetItem, QListWidget, QHBoxLayout, QFileDialog, QComboBox
 from PySide6.QtCore import QSize, QPoint
-from PySide6.QtGui import Qt, QColor
+from PySide6.QtGui import Qt, QColor, QFont
 
 from typing import List
 from pathlib import Path
@@ -9,7 +9,7 @@ import os
 
 from taplt.ui.list_widgets import LabelList, SettingList
 from taplt.utils.qt import get_icon
-from taplt.utils.stylesheets import BUTTON_STYLESHEET, BASE_FONT_SIZE
+from taplt.utils.stylesheets import get_button_stylesheet, BASE_FONT_SIZE
 
 
 class CloseMessageBox(QMessageBox):
@@ -248,7 +248,10 @@ class ProjectHandlerDialog(QDialog):
 
         # Header for LineEdit
         self.header = QLabel()
-        self.header.setStyleSheet(f"font: bold {BASE_FONT_SIZE + 2}px")
+        font = QFont(self.header.font())
+        font.setPointSize(BASE_FONT_SIZE + 2)
+        font.setBold(True)
+        self.header.setFont(font)
         self.header.setText("Choose Project Location")
 
         # LineEdit where user can enter a path
@@ -266,14 +269,14 @@ class ProjectHandlerDialog(QDialog):
         # button to open up a FileDialog
         self.select_path_button = QPushButton()
         self.select_path_button.setFixedSize(QSize(40, 30))
-        self.select_path_button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE + 1))
+        self.select_path_button.setStyleSheet(get_button_stylesheet(BASE_FONT_SIZE))
         self.select_path_button.setText('...')
         self.select_path_button.clicked.connect(self.select_path)
 
         # button to add initial files
         self.add_files_button = QPushButton()
         self.add_files_button.setFixedWidth(180)
-        self.add_files_button.setStyleSheet(BUTTON_STYLESHEET.format(button_size=BASE_FONT_SIZE + 1))
+        self.add_files_button.setStyleSheet(get_button_stylesheet(BASE_FONT_SIZE))
         self.add_files_button.setText("Add files to get started")
         self.add_files_button.clicked.connect(self.add_files)
 
@@ -437,7 +440,10 @@ class SettingDialog(QDialog):
         self.setWindowTitle("Settings")
 
         self.header = QLabel("Enter your preferences")
-        self.header.setStyleSheet(f"font: bold {BASE_FONT_SIZE + 2}px")
+        font = QFont(self.header.font())
+        font.setPointSize(BASE_FONT_SIZE + 2)
+        font.setBold(True)
+        self.header.setFont(font)
         boolean_settings = [s for s in settings if s[0] != "Font size"]
         self.preferences = SettingList(boolean_settings)
         self.settings = list()

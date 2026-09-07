@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QAction, QFont, QKeySequence, QIcon
 
+import os
 from pathlib import Path
 from dataclasses import dataclass
 from taplt.src.actions import Action
@@ -16,16 +17,21 @@ from taplt.ui.annotation_tree import AnnotationTree
 from taplt.ui.welcome_screen import WelcomeScreen
 from taplt.utils.qt import colormap_rgb, get_icon
 from taplt.utils.project_structure import check_environment, Structure
-from taplt.utils.stylesheets import TAB_STYLESHEET, FONT_SMALL, FONT_MEDIUM, FONT_LARGE
+from taplt.utils.stylesheets import (get_tab_stylesheet, get_header_label_stylesheet,
+                                     OVERLAY_LABEL_STYLESHEET, set_theme,
+                                     FONT_SMALL, FONT_MEDIUM, FONT_LARGE, BASE_FONT_SIZE)
 from taplt.macros.macros import Macros
 from taplt.macros.macros_dialogs import PreviewDatabaseDialog
-
+from taplt.ui.collapsible_box import CollapsibleBox
+from taplt import source_directory
 from taplt.ui.list_widgets import normalize_setting_value
 
 import h5py
 import numpy as np
 
 NUM_COLORS = 25
+DEFAULT_RIGHT_PANEL_WIDTH = 280
+MIN_RIGHT_PANEL_WIDTH = 180
 
 class LabelingMainWindow(QMainWindow):
     """The main window for the application"""
@@ -41,8 +47,12 @@ class LabelingMainWindow(QMainWindow):
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
     sRequestImportInfo = Signal()
+<<<<<<< HEAD
     sSendSpotsToDraw = Signal(str)
     sSendMatrixOfGenesAndBarcodes = Signal(str)
+=======
+    sAddLabelTable = Signal(str)
+>>>>>>> 794ef19cf2221274aae51078f3755ebd645c1d39
 
     @dataclass
     class Changes:
@@ -54,6 +64,7 @@ class LabelingMainWindow(QMainWindow):
     def __init__(self):
         super(LabelingMainWindow, self).__init__()
         self.setWindowTitle("The All-Purpose Labeling Tool")
+        self.setWindowIcon(QIcon(os.path.join(source_directory, 'icons', 'logo2.png')))
         self.resize(1276, 968)
         self.setTabShape(QTabWidget.TabShape.Rounded)
 
@@ -78,12 +89,7 @@ class LabelingMainWindow(QMainWindow):
 
         # zoom label on top right side
         self.zoom_label = QLabel("100%", self.file_display)
-        self.zoom_label.setStyleSheet("""
-            background-color: rgba(0,0,0,150);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            """)
+        self.zoom_label.setStyleSheet(OVERLAY_LABEL_STYLESHEET)
         self.zoom_label.adjustSize()
         self.zoom_label.raise_()
         self.file_display.hide_button.setVisible(False)
@@ -99,39 +105,59 @@ class LabelingMainWindow(QMainWindow):
 
         # Right Menu
         self.right_menu_widget = QWidget()
-        self.right_menu_widget.setMaximumWidth(200)
+        self.right_menu_widget.setMinimumWidth(MIN_RIGHT_PANEL_WIDTH)
         self.right_menu_widget.setLayout(QVBoxLayout())
         self.right_menu_widget.layout().setContentsMargins(0, 0, 0, 0)
         self.right_menu_widget.layout().setSpacing(0)
 
-        # the label, polygons and file lists
+        # the label, polygons and file lists — each wrapped in a foldable section
         self.labels_list = LabelsViewingWidget()
+        self.labels_list.file_label.hide()  # header now provided by the collapsible box
+        self.labels_section = CollapsibleBox("Labels")
+        self.labels_section.setContentWidget(self.labels_list)
+
         self.polygons = AnnotationTree()
+        self.polygons.setMinimumSize(QSize(0, 300))
+        self.polygons_section = CollapsibleBox("Polygons")
+        self.polygons_section.setContentWidget(self.polygons)
+
         self.file_list = FileViewingWidget()
+        self.file_list.file_label.hide()  # header now provided by the collapsible box
+        self.file_list_section = CollapsibleBox("File List")
+        self.file_list_section.setContentWidget(self.file_list)
 
-        # widget for the polygons
-        self.poly_widget = QWidget()
-        self.poly_widget.setMinimumSize(QSize(0, 300))
-        self.poly_widget.setLayout(QVBoxLayout())
-        self.poly_widget.layout().setContentsMargins(0, 0, 0, 0)
-        self.poly_widget.layout().setSpacing(0)
-        self.poly_label = QLabel(self)
-        self.poly_label.setStyleSheet("background-color: rgb(186, 189, 182);")
-        self.poly_label.setText("Polygons")
-        self.poly_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.poly_widget.layout().addWidget(self.poly_label)
-        self.poly_widget.layout().addWidget(self.polygons)
+        self.right_menu_widget.layout().addWidget(self.labels_section)
+        self.right_menu_widget.layout().addWidget(self.polygons_section)
+        self.right_menu_widget.layout().addWidget(self.file_list_section)
 
-        self.right_menu_widget.layout().addWidget(self.labels_list)
-        self.right_menu_widget.layout().addWidget(self.poly_widget)
-        self.right_menu_widget.layout().addWidget(self.file_list)
+        self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.main_splitter.setHandleWidth(5)
+        self.main_splitter.setChildrenCollapsible(False)
+        self.main_splitter.addWidget(self.center_frame)
+        self.main_splitter.addWidget(self.right_menu_widget)
+        self.main_splitter.setStretchFactor(0, 1)
+        self.main_splitter.setStretchFactor(1, 0)
+        self.main_splitter.setSizes([self.width() - DEFAULT_RIGHT_PANEL_WIDTH, DEFAULT_RIGHT_PANEL_WIDTH])
 
-        self.main_widget.layout().addWidget(self.center_frame)
-        self.main_widget.layout().addWidget(self.right_menu_widget)
+        self.main_widget.layout().addWidget(self.main_splitter)
         self.setCentralWidget(self.main_widget)
 
         self.menubar = MenuBar(self)
         self.setMenuBar(self.menubar)
+        self.corner_container = QWidget()
+        self.corner_container.setLayout(QHBoxLayout())
+        self.corner_container.layout().setContentsMargins(0, 0, 8, 0)
+        self.corner_container.layout().setSpacing(4)
+        self.corner_container.layout().addWidget(self.menubar.nav_widget)
+        self.right_panel_toggle = QToolButton(self)
+        self.right_panel_toggle.setText("☰")
+        self.right_panel_toggle.setCheckable(True)
+        self.right_panel_toggle.setChecked(True)
+        self.right_panel_toggle.setToolTip("Show/hide side panel")
+        self.right_panel_toggle.setStyleSheet("QToolButton { font-size: 16px; padding: 2px 8px; }")
+        self.right_panel_toggle.clicked.connect(self.toggle_right_panel)
+        self.corner_container.layout().addWidget(self.right_panel_toggle)
+        self.menubar.setCornerWidget(self.corner_container, Qt.TopRightCorner)
         self.menubar.setVisible(True)
 
         self.statusbar = QStatusBar()
@@ -155,9 +181,15 @@ class LabelingMainWindow(QMainWindow):
         self.img_idx = 0
         self.changes = list()
         self.autoSave = False
+        self.project_location = ""
 
         self.macros = Macros()
+        
+        # welcome screen
         self.set_welcome_screen(True)
+
+        self.welcome_screen.sNewProject.connect(self.new_project)
+        self.welcome_screen.sOpenProject.connect(self.open_project)
 
         # connect signals
         self.file_display.sRequestSave.connect(self.save_to_database)
@@ -180,13 +212,24 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sOpenProject.connect(self.open_project)
         self.menubar.sCloseProject.connect(self.close_project)
         self.menubar.sExampleProject.connect(self.macros.example_project)
+<<<<<<< HEAD
         self.menubar.sGenExpression.connect(self.loadGenExpressions)
+=======
+        self.labels_list.label_table.sImportRequested.connect(self.menubar.sRequestImportLabelTable.emit)
+        self.labels_list.sCsvFilesDropped.connect(self.import_dropped_label_tables)
+>>>>>>> 794ef19cf2221274aae51078f3755ebd645c1d39
 
         self.file_list.sFilesDropped.connect(self.import_dropped_files)
+
+        self.menubar.sUndo.connect(self.file_display.annotations.undo)
+        self.menubar.sRedo.connect(self.file_display.annotations.redo)
 
     def show_duplicate_warning(self, filename: str):
         QMessageBox.warning(self, "Duplicate File",
                             f'"{filename}" is already in the project and was not added again.')
+
+    def show_label_table_import_error(self, error: str):
+        QMessageBox.warning(self, "Could not import label table", error)
 
     def set_tool_tip(self, tip: str):
         # TODO: This is kind of working, but not really. You have to hover out of the display widget.
@@ -216,9 +259,21 @@ class LabelingMainWindow(QMainWindow):
         self._pending_dropped_files = []
         self.sRequestUpdate.emit(self.img_idx)
 
+    def import_dropped_label_tables(self, filepaths: list):
+        if not filepaths or not self.project_location:
+            return
+        if not self.check_for_changes():
+            return
+
+        for filepath in filepaths:
+            self.sAddLabelTable.emit(filepath)
+
+        self.sRequestUpdate.emit(self.img_idx)
+
     def apply_settings(self, settings: list):
         """applies the settings"""
         font_size = None
+        theme_changed = False
         for setting in settings:
             if setting[0] == "Autosave on file change":
                 self.autoSave = normalize_setting_value(setting[1])
@@ -237,10 +292,10 @@ class LabelingMainWindow(QMainWindow):
                     font_size = FONT_MEDIUM
 
         if font_size is not None:
-            font = QFont()
+            font = QFont(QApplication.instance().font())
             font.setPointSize(font_size)
             QApplication.instance().setFont(font)
-            self.file_list.tab.setStyleSheet(TAB_STYLESHEET.format(tab_size=font_size))
+            self.file_list.tab.setStyleSheet(get_tab_stylesheet(font_size))
             self.file_list.search_field.setFont(font)
             self.file_list.image_list.setFont(font)
             self.file_list.wsi_list.setFont(font)
@@ -249,8 +304,19 @@ class LabelingMainWindow(QMainWindow):
 
             for button in self.toolBar.findChildren(QToolButton):
                 button.setFont(font)
+                self.toolBar.update_button_sizes()
+
+        if theme_changed:
+            self.refresh_theme()
 
         self.sUpdateSettings.emit(settings)
+
+    def refresh_theme(self):
+        """re-applies all theme-dependent stylesheets after a dark-mode toggle"""
+        self.labels_list.refresh_theme()
+        self.file_list.refresh_theme()
+        self.toolBar.refresh_theme()
+        self.polygons.refresh_theme()
 
     def change_detected(self, change: int):
         """appends the detected change to the changes list"""
@@ -288,6 +354,8 @@ class LabelingMainWindow(QMainWindow):
         if self.check_for_changes():
             self.set_welcome_screen(True)
             self.menubar.enable_tools(["New Project", "Open Project", "Quit Program", "Example Project"])
+            self.project_location = ""
+            self.labels_list.label_table.clear_table()
             self.sDisconnect.emit()
 
     def delete_file(self, filename):
@@ -342,6 +410,31 @@ class LabelingMainWindow(QMainWindow):
                     self.sAddFile.emit(filepath, patient)
                     self.sRequestUpdate.emit(self.img_idx)
 
+    def import_label_table(self):
+        """executes a dialog to let the user select a CSV label table for import"""
+        if not self.project_location:
+            return
+
+        dialog = QFileDialog(self)
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        dialog.setNameFilter("CSV (*.csv)")
+        dialog.setDirectory(str(Path.home()))
+
+        if dialog.exec():
+            filepath = dialog.selectedFiles()[0]
+            if self.check_for_changes():
+                self.sAddLabelTable.emit(filepath)
+                self.sRequestUpdate.emit(self.img_idx)
+
+    def load_label_table(self, label_table_path: str):
+        """loads a persisted label table for the current project, if present"""
+        self.labels_list.label_table.clear_table()
+        if label_table_path:
+            error = self.labels_list.label_table.load_csv(label_table_path)
+            if error:
+                self.show_label_table_import_error(error)
+
     def new_project(self):
         """executes a dialog prompting the user to enter information about the new project"""
         if self.check_for_changes():
@@ -374,6 +467,17 @@ class LabelingMainWindow(QMainWindow):
                     msg.setText("Invalid Project Location")
                     msg.setStandardButtons(QMessageBox.StandardButton.Ok)
                     msg.exec()
+
+    def open_menu(self):
+        self.menu(True)
+
+    def close_menu(self):
+        self.menu(False)
+
+    def toggle_right_panel(self, checked: bool):
+        """shows or hides the entire right-hand side panel via the hamburger button"""
+        self.right_menu_widget.setVisible(checked and not self.welcome_screen.isVisible())
+
 
     def open_settings(self, settings: list):
         """opens up the settings dialog, sends signal to save them"""
@@ -418,9 +522,13 @@ class LabelingMainWindow(QMainWindow):
 
     def save_to_database(self):
         """stores the current state of the image to the database"""
-        annotations = list(self.file_display.annotations.annotations.values())
+        annotations = [
+            shape for shape in self.file_display.annotations.annotations.values()
+            if shape.isVisible()
+        ]    
         self.changes.clear()
         self.sSaveToDatabase.emit(annotations, self.img_idx)
+        self.file_display.annotations.clear_history()
 
     def set_no_files_screen(self, b: bool):
         """ either hides the default label or the image display"""
@@ -433,26 +541,37 @@ class LabelingMainWindow(QMainWindow):
         self.file_display.setHidden(b)
         self.no_files.setHidden(b)
         self.toolBar.setHidden(b)
-        self.right_menu_widget.setHidden(b)
+        self.right_menu_widget.setHidden(b or not self.right_panel_toggle.isChecked())
         self.welcome_screen.setHidden(not b)
         self.zoom_label.setVisible(not b)
+        self.right_panel_toggle.setVisible(not b)
+        self.menubar.nav_widget.setVisible(not b)
 
-    def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list):
+    def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list, label_table_path: str = ""):
         """main updating function: all necessary information is passed to the main window"""
         self.img_idx = img_idx
+        if label_table_path:
+            self.project_location = str(Path(label_table_path).parents[1])
+        elif files:
+            self.project_location = str(Path(files[0][0]).parents[2])
+        else:
+            self.project_location = ""
+
         color_map, new_color = colormap_rgb(n=NUM_COLORS)
         self.labels_list.label_list.update_with_classes(classes, color_map)
+        self.load_label_table(label_table_path)
         self.file_list.update_list(files, self.img_idx)
         if files:
             self.set_no_files_screen(False)
             current_labels = self.file_display.init_image(files[self.img_idx][0], patient, labels, classes)
             self.polygons.update_polygons(current_labels)
+            self.labels_list.label_table.highlight_filename(files[self.img_idx][0])
         else:
             self.set_no_files_screen(True)
 
         self.update_toolbar()
         QTimer.singleShot(50, self._reposition_zoom_label)
-        QTimer.singleShot(50, lambda: (self.zoom_label.setText("100%"), self.zoom_label.adjustSize()))
+        
         
     def update_toolbar(self):
         self.toolBar.adjustSize()

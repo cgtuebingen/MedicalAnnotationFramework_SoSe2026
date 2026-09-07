@@ -33,5 +33,8 @@
     <file>../icons/point_tool.png</file>
     <file>../icons/polygon_tool.png</file>
     <file>../icons/arrow_tool.png</file>
+    <file>../icons/logo.png</file>
+    <file>.../icons/arrow_right.png</file>
+    <file>.../icons/arrow_left.png</file>
   </qresource>
 </RCC>

@@ -53,6 +53,7 @@ if sys.platform.startswith("win"):
             "Programming Language :: Python :: 3.9"
         ],
         package_data={"taplt": ["icons/*",
+                                "fonts/*",
                                 "macros/examples/demo/*",
                                 "macros/examples/images/*"]},
         entry_points={
@@ -89,6 +90,7 @@ elif sys.platform.startswith("darwin"):
             "Programming Language :: Python :: 3.9"
         ],
         package_data={"taplt": ["icons/*",
+                                "fonts/*",
                                 "macros/examples/demo/*",
                                 "macros/examples/images/*"]},
         entry_points={
