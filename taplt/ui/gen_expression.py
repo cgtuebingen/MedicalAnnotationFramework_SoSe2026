@@ -14,6 +14,9 @@ from dataclasses import dataclass
 import math
 from copy import deepcopy
 import numpy as np
+import pandas
+import h5py
+
 from taplt.config import SCALING_INITIAL
 
 from taplt.utils.qt import closest_euclidean_distance
@@ -79,7 +82,6 @@ class Shape(QGraphicsObject):
         self._anchorPoint = None
         self.line_color, self.brush_color = QColor(), QColor()
         self.init_color(color)
-        self.selected_color = Qt.GlobalColor.white
         self.vertices = VertexCollection(_points)
 
         # distinction between highlighted (hovering over it) and selecting it (click)
@@ -256,8 +258,6 @@ class VertexCollection(object):
         self._points = QPolygonF(points)
         self.highlight_color = Qt.GlobalColor.white
         self._highlight_size = 1
-        self.highlighted_vertex = -1
-        self.selected_vertex = -1
         self._scaling = SCALING_INITIAL
 
     def __len__(self):
@@ -352,22 +352,166 @@ class GenExpression(QGraphicsObject):
         else:
             pass
     @Slot()
-    #def recieveSpotsToDraw(self, spots:dict[str,int|str]):
-    def recieveSpotsToDraw(self, spots:list[dict[str,int|str]]):
+    #def recieveSpotsToDraw(self, ):
+    def recieveSpotsToDraw(self, spatial_path):
+        f = pandas.read_csv(spatial_path)  
+        spots = [{"barcode":barcode,
+                  "pxl_row":pxl_row_in_fullres,
+                  "pxl_col":pxl_col_in_fullres} for [barcode,_,_,_,pxl_row_in_fullres,pxl_col_in_fullres] in f.to_numpy()]
         print("Recieved:\t", len(spots), type(spots))
-        width, height = (35637,29395) # TODO: ATTENTION THIS MUST BE SCANNED-PICTURE DIMENSIONS -Live READ
+        # TODO Scalling by scalfactors.json
+        regist_target_img_scalef = 0.16836435
+        tissue_hires_scalef = 0.056121446
+        tissue_lowres_scalef = 0.016836435
+        fiducial_diameter_fullres = 384.18505640709947
+        spot_diameter_fullres = 256.12337093806633
+        radius:float = (spots[1].get("pxl_col") - spots[0].get("pxl_col")) * tissue_hires_scalef /3.0
+        print(f"radius:\t{radius}")
         shapes:List[Shape] = []
         s = self.scene()
+        
+        print(spots[0])
         for spot in spots:
-            x = int(spot.get("pxl_row") / width * s.width())
-            y = int(spot.get("pxl_col") / height * s.height())
-            # TODO Scalling by scalfactors.json
-            point = [QPointF(x,y), QPointF(x+14,y)]
+            x = int(spot.get("pxl_col") * tissue_hires_scalef)
+            y = int(spot.get("pxl_row") * tissue_hires_scalef)
+
+            point = [QPointF(x,y), QPointF(x+radius,y)]
             shapes.append(Shape(image_size=QSize(int(s.width()), int(s.height())),
                                                         mode=Shape.ShapeMode.FIXED, # type: ignore
                                                         color=self.draw_new_color, 
                                                         points=point))
         self.add_shapes(shapes)
+        self.shapes = shapes
+        self.spots = spots
+    def recieveGenesBarcodeMatrix(self, matrix_path:str):
+        expression_content = h5py.File(matrix_path, 'r')
+        hd5f_keys = np.array(expression_content["matrix"])
+        print(list(hd5f_keys))
+        #for key in hd5f_keys:
+        #    print(np.array(expression_content["matrix"][key]))
+        #for key in hd5f_keys:
+        #    print(np.array(expression_content["matrix"][key]))
+        #print(np.array(expression_content["matrix"]["features"]["name"]))
+        #print([a for a in expression_content.keys()][0])
+        matrix  = expression_content["matrix"]
+        self.matrix = matrix
+        def decoder(a:bytes):
+            return a.decode("utf-8")
+        self.used_barcodes = np.array(list(map(decoder, matrix["barcodes"])))
+        spots_barcodes = [a['barcode'] for a in self.spots]
+        print()
+        j=len(self.used_barcodes)-1
+        for i in range(len(self.spots)-1,-1,-1):
+            if i<10:
+                print(self.spots[i]["barcode"],self.used_barcodes[j], f"j={j}")
+            if j>0 and self.spots[i]["barcode"]==self.used_barcodes[j] or self.spots[i]["barcode"] in self.used_barcodes:
+                j-=1
+            else:
+                self.shapes[i].deleteLater()
+                self.shapes.pop(i)
+                spots_barcodes.pop(i)
+        #ids_to_remove = []
+        #        for shape_id in self.annotations:
+        #            if self.annotations[shape_id] in shapes:
+        #                ids_to_remove.append(shape_id)
+        #                self.annotations[shape_id].deleteLater()
+        #        [(self.annotations[x].disconnect(self.annotations[x]), self.annotations.pop(x)) for x in ids_to_remove]
+        self.update()
+        reordered_shapes = []
+        reordered_spots = []
+        spots_barcodes = np.array(spots_barcodes)
+        print(f"used_barcodes: {spots_barcodes}, {len(self.used_barcodes)}")
+        print(f"spots: {spots_barcodes}, {len(spots_barcodes)}")
+        for barcode in self.used_barcodes:
+            shape_index = np.where(barcode == spots_barcodes)[0][0]
+            print(shape_index)
+            reordered_shapes.append(self.shapes[shape_index])
+            reordered_spots.append(spots_barcodes[shape_index])
+        self.shapes = reordered_shapes
+        print(f"used_barcodes: {self.used_barcodes}, {len(self.used_barcodes)}")
+        print(f"spots: {reordered_spots}, {len(reordered_spots)}")
+
+        result =  self.read_col(2326, matrix)
+        self.update()
+        self.setColor(result)
+
+        
+
+        #print(result, len(result))
+        #row0 = read_row(0, expression_content)
+        #print(row0.nonzero())
+        #print([a for a in row0 if a != 0])
+    """def read_row(self, row:int, expression_content):
+        '''Given a spot, find all the genes and their amount of appearence'''
+        matrix = expression_content["matrix"]
+        barcodes = matrix["barcodes"]
+        data = matrix["data"]
+        genes = matrix["features"]["name"]
+        indices = matrix["indices"]
+        indptr = matrix["indptr"]
+        shape_x, shape_y = matrix["shape"]
+        print(shape_x, shape_y)
+
+        barcode = barcodes[row]
+        print(barcode)
+        k,l = (indptr[row],indptr[row+1])
+        entries = data[k:l]
+        at_columns = indices[k:l]
+        j=0
+        result = np.array([])
+        for i in range(shape_x):
+            if i == indices[j]:
+                result = np.append(result, [entries[j]])
+                j+=1
+            else: result = np.append(result, [0])
+        return result"""
+
+    def setColor(self, gen_occurence:list[int]):
+        max_amount = max(gen_occurence)
+        brusher = self.colorRange(max_amount)
+        for i in range(len(self.shapes)):
+            self.shapes[i].init_color(brusher(gen_occurence[i]))
+                
+    def read_col(self, col:int, matrix):
+        '''Given a gen, find all the spots where the gen appears and the amount'''
+        barcodes = matrix["barcodes"]
+        data = matrix["data"]
+        genes = matrix["features"]["name"]
+        indices = matrix["indices"]
+        indptr = matrix["indptr"]
+        shape_x, shape_y = matrix["shape"]
+        gen = genes[col]
+        print(gen)
+        data_np = np.array(data)
+        indices_np= np.array(indices)
+        indptr_np = np.array(indptr)
+        spots_of_gene_spared = np.where(indices_np == col)[0]
+        #print(spots_of_gene_spared)
+        spots_of_gene:list[int] = []
+        j = 0
+        last_barcode_index = 0
+        for spot in spots_of_gene_spared:
+            if spot < indptr_np[last_barcode_index+1]:
+                spots_of_gene.append(int(data_np[spot]))
+            else:
+                while spot >= indptr_np[last_barcode_index+1]:
+                    if last_barcode_index<4: print(spot, last_barcode_index, indptr_np[last_barcode_index+1])
+                    last_barcode_index+=1
+                    spots_of_gene.append(0)
+                spots_of_gene[-1] = int(data_np[spot])
+        return spots_of_gene
+                    
+    def setRandomColor(self):
+        brusher = self.colorRange(10)
+        for i in range(len(self.shapes)):
+            self.shapes[i].init_color(brusher(i % 10))
+        self.shapes = self.shapes
+    def colorRange(self, max_value:int):
+            def getColorOFValue(val:int):
+                if val == 0:
+                    return QColor(255,255,255,a=0)
+                return QColor(55+int(200*val/max_value), 128-int(128*val/max_value),50)
+            return getColorOFValue
     @Slot()
     def set_drawing_to_false(self):
         self.drawing = False
