@@ -61,8 +61,10 @@ def test_forward_first_click():
     annotation_group.set_type(Shape.ShapeType.POINT)
     annotation_group.create_shape(event)
 
-    assert annotation_group.temp_shape is not None
-    assert len(annotation_group.temp_shape.vertices.vertices) == 1
+    point_shape = annotation_group.annotations[0]
+
+    assert annotation_group.temp_shape is None
+    assert len(point_shape.vertices.vertices) == 1
 
     annotation_group.set_type(Shape.ShapeType.POLYGON)
     annotation_group.create_shape(event)
