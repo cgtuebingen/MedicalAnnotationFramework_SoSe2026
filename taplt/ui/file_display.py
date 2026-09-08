@@ -24,6 +24,7 @@ class CenterDisplayWidget(QWidget):
     modalitySwitched = Signal(str)
     sZoomChanged = Signal(float)
     sEnterPressed = Signal()
+    sEscapePressed = Signal()
 
     CREATE, EDIT = 0, 1
 
@@ -92,6 +93,9 @@ class CenterDisplayWidget(QWidget):
         self.slide_viewer.sEnterPressed.connect(self.on_enter_pressed)
 
         self.slide_viewer.sZoomChanged.connect(self.sZoomChanged)
+
+        self.image_viewer.sEscapePressed.connect(self.annotations.cancel_drawing)
+        self.slide_viewer.sEscapePressed.connect(self.annotations.cancel_drawing)
 
         self.sZoomChanged.connect(self.top_ruler.set_zoom)
         self.sZoomChanged.connect(self.left_ruler.set_zoom)
