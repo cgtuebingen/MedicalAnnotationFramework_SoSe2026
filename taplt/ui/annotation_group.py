@@ -229,6 +229,12 @@ class AnnotationGroup(QGraphicsObject):
         shape.deleteLater()
         self.temp_shape = None
         self.updateShapes.emit(list(self.annotations.values()))
+
+        if self.pending_shapes:
+            self.sToolTip.emit("Press Enter to label all annotations.")
+        else:
+            self.sToolTip.emit("")
+        self.updateShapes.emit(list(self.annotations.values()))
         
     def clear(self):
         """
