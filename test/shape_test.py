@@ -147,3 +147,17 @@ def test_redo():
 
     assert shape.isVisible()
     assert shape in group.pending_shapes
+
+def test_cancel_drawing():
+    scene = QGraphicsScene()
+    annotation_group = AnnotationGroup()
+    scene.addItem(annotation_group)
+
+    annotation_group.set_type(Shape.ShapeType.POLYGON)
+    annotation_group.create_shape()
+
+    assert annotation_group.temp_shape is not None
+    assert len(annotation_group.annotations) == 1
+    annotation_group.cancel_drawing()
+    assert annotation_group.temp_shape is None
+    assert len(annotation_group.annotations) == 0
