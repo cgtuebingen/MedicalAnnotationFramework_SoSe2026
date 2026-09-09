@@ -12,7 +12,7 @@ from taplt.ui.toolbar import Toolbar
 from taplt.ui.dialogs import (SelectPatientDialog, CloseMessageBox, DeleteFileMessageBox,
                               ForgotToSaveMessageBox, SettingDialog, ProjectHandlerDialog)
 from taplt.ui.menu_bar import MenuBar
-from taplt.ui.list_widgets import FileViewingWidget, LabelsViewingWidget
+from taplt.ui.list_widgets import FileViewingWidget, LabelsViewingWidget, GenExpressionWidget
 from taplt.ui.annotation_tree import AnnotationTree
 from taplt.ui.welcome_screen import WelcomeScreen
 from taplt.utils.qt import colormap_rgb, get_icon
@@ -118,6 +118,10 @@ class LabelingMainWindow(QMainWindow):
         self.polygons_section = CollapsibleBox("Polygons")
         self.polygons_section.setContentWidget(self.polygons)
 
+        self.gen_expression = GenExpressionWidget()
+        self.gen_expression_section = CollapsibleBox("Gen Expression")
+        self.gen_expression_section.setContentWidget(self.gen_expression)
+
         self.file_list = FileViewingWidget()
         self.file_list.file_label.hide()  # header now provided by the collapsible box
         self.file_list_section = CollapsibleBox("File List")
@@ -125,6 +129,7 @@ class LabelingMainWindow(QMainWindow):
 
         self.right_menu_widget.layout().addWidget(self.labels_section)
         self.right_menu_widget.layout().addWidget(self.polygons_section)
+        self.right_menu_widget.layout().addWidget(self.gen_expression_section)
         self.right_menu_widget.layout().addWidget(self.file_list_section)
 
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)

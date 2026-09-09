@@ -398,6 +398,22 @@ def normalize_setting_value(value):
                 return False
         return bool(value)
 
+class GenExpressionWidget(QWidget):
+    """a checkable option, that is not wired up to any logic yet"""
+    def __init__(self):
+        super(GenExpressionWidget, self).__init__()
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
+
+        self.some_checkbox = QCheckBox("Enable Gen-Expression")
+        self.layout().addWidget(self.some_checkbox)
+
+    def refresh_theme(self):
+        """no theme-dependent styling, just for future proofing"""
+        pass
+
+
 class SettingList(QListWidget):
     def __init__(self, settings):
         super(SettingList, self).__init__()
