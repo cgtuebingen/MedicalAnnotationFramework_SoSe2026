@@ -36,9 +36,9 @@ and allows for creating annotation projects where you can:
 2. assign patient names or IDs
 3. mark areas in the image and assign labels to them
 
-<img alt="Demo 2" src="taplt/macros/examples/demo/Demo2.png" title="Demo 2" width="650"/>
-<img alt="Demo 3" src="taplt/macros/examples/demo/Demo3.png" title="Demo 3" width="650"/>
-<img alt="Demo 4" src="taplt/macros/examples/demo/Demo4.png" title="Demo 4" width="650"/>
+<img alt="Demo 5" src="taplt/macros/examples/demo/Demo5.png" title="Demo 5" width="650"/>
+<img alt="Demo 6" src="taplt/macros/examples/demo/Demo6.png" title="Demo 6" width="650"/>
+<img alt="Demo 7" src="taplt/macros/examples/demo/Demo7.png" title="Demo 7" width="650"/>
 
 
 
