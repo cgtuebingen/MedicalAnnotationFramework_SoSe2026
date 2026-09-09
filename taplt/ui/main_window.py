@@ -26,6 +26,9 @@ from taplt.ui.collapsible_box import CollapsibleBox
 from taplt import source_directory
 from taplt.ui.list_widgets import normalize_setting_value
 
+import h5py
+import numpy as np
+
 NUM_COLORS = 25
 DEFAULT_RIGHT_PANEL_WIDTH = 280
 MIN_RIGHT_PANEL_WIDTH = 180
@@ -44,6 +47,8 @@ class LabelingMainWindow(QMainWindow):
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
     sRequestImportInfo = Signal()
+    sSendSpotsToDraw = Signal(str)
+    sSendMatrixOfGenesAndBarcodes = Signal(str)
     sAddLabelTable = Signal(str)
 
     @dataclass
@@ -204,6 +209,7 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sOpenProject.connect(self.open_project)
         self.menubar.sCloseProject.connect(self.close_project)
         self.menubar.sExampleProject.connect(self.macros.example_project)
+        self.menubar.sGenExpression.connect(self.loadGenExpressions)
         self.labels_list.label_table.sImportRequested.connect(self.menubar.sRequestImportLabelTable.emit)
         self.labels_list.sCsvFilesDropped.connect(self.import_dropped_label_tables)
 
@@ -476,6 +482,21 @@ class LabelingMainWindow(QMainWindow):
         s = dlg.settings
         if dlg.settings:
             self.apply_settings(dlg.settings)
+    def loadGenExpressions(self):
+        spatial_path, _ = QFileDialog.getOpenFileName(self,
+                                                caption="Select GenExpressions csv tissue positions",
+                                                dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",#str(Path.home()),
+                                                filter="Database (*.csv)",
+                                                options=QFileDialog.Option.DontUseNativeDialog)
+        if spatial_path:
+            self.sSendSpotsToDraw.emit(spatial_path)
+            expression_path, _ = QFileDialog.getOpenFileName(self,
+                                                        caption="Select GenExpressions h5 Matrix",
+                                                        dir=str("/".join(spatial_path.split("/")[:-2])+"/"),
+                                                        filter="Database (*.h5)",
+                                                        options=QFileDialog.Option.DontUseNativeDialog)
+            if expression_path:
+                self.sSendMatrixOfGenesAndBarcodes.emit(expression_path)
 
     def next_image(self, direction: int):
         """proceeds to the next/previous image"""
