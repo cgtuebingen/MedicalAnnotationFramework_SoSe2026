@@ -91,9 +91,10 @@ class DeleteFileMessageBox(QMessageBox):
 class DeleteShapeMessageBox(QMessageBox):
     def __init__(self, label: str, *args):
         super().__init__(*args)
+        display_label = label if label else "this annotation"
         self.setWindowTitle("Delete Annotation")
         self.setIcon(QMessageBox.Icon.Question)
-        self.setText("You are about to delete {}.\nContinue?".format(label))
+        self.setText("You are about to delete {}.\nContinue?".format(display_label))
         self.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
 
 

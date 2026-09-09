@@ -55,6 +55,7 @@ class AnnotationGroup(QGraphicsObject):
     @Slot()
     def set_drawing_to_false(self):
         self.drawing = False
+        self.temp_shape = None
         if self.pending_shapes:
             self.sToolTip.emit("Press Enter to label all annotations.")
         else: 
@@ -124,9 +125,9 @@ class AnnotationGroup(QGraphicsObject):
                     self.remove_shapes([self.temp_shape])
                 self.temp_shape.sIllegalCircleOnBorder.connect(delete)
             if self.shapeType == Shape.ShapeType.POLYGON:
-                self.sToolTip.emit("Press right click to end the annotation.")
+                self.sToolTip.emit("Right click to end the annotation.")
             else:
-                self.sToolTip.emit("Press left click a 2nd time to end the annotation.")       
+                self.sToolTip.emit("Click to end the annotation.")       
             self.temp_shape.grabMouse()
             if event is not None:
                 self.forward_click(event)
@@ -183,6 +184,14 @@ class AnnotationGroup(QGraphicsObject):
         """
         if shapes is None:
             return
+        if isinstance(shapes, Shape) and shapes is self.temp_shape:
+            self.cancel_drawing()
+            return
+        if isinstance(shapes, list) and self.temp_shape in shapes:
+            self.cancel_drawing()
+            shapes = [s for s in shapes if s is not self.temp_shape]
+            if not shapes:
+                return
         if isinstance(shapes, Shape):
             dlg = DeleteShapeMessageBox(shapes.label)
             dlg.exec()
@@ -202,7 +211,31 @@ class AnnotationGroup(QGraphicsObject):
                 updated_pending_shapes.append(shape)
         self.pending_shapes = updated_pending_shapes
         self.updateShapes.emit(list(self.annotations.values()))
+    
+    def cancel_drawing(self):
+        "cancels current drawing and removes the temp shape from the scene and group"
+        if not self.drawing or self.temp_shape is None:
+            return
+        shape = self.temp_shape
+        self.drawing = False
+        if shape.scene() is not None:
+            shape.scene().removeItem(shape)
+        ids_to_remove = [s_id for s_id, s in self.annotations.items() if s is shape]
+        for s_id in ids_to_remove:
+            self.annotations.pop(s_id)
+        if shape in self.pending_shapes:
+            self.pending_shapes.remove(shape)
+        
+        shape.deleteLater()
+        self.temp_shape = None
+        self.updateShapes.emit(list(self.annotations.values()))
 
+        if self.pending_shapes:
+            self.sToolTip.emit("Press Enter to label all annotations.")
+        else:
+            self.sToolTip.emit("")
+        self.updateShapes.emit(list(self.annotations.values()))
+        
     def clear(self):
         """
         Clears the group and scene of shapes

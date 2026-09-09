@@ -6,6 +6,7 @@ from PySide6.QtWidgets import *
 class ImageViewer(QGraphicsView):
     sNextFile = Signal(int)
     sEnterPressed = Signal()
+    sEscapePressed = Signal()
 
     def __init__(self, *args):
         super(ImageViewer, self).__init__(*args)
@@ -20,7 +21,9 @@ class ImageViewer(QGraphicsView):
 
         # Protected Item
         self._scaling_factor = 5 / 4
-        self._enableZoomPan = False
+
+        self._enablePan = False
+        self._base_scale = 1.0
         self._current_scale = 1.0
         self._min_scale = 1.0
         self._max_scale = 100000.0
@@ -39,6 +42,7 @@ class ImageViewer(QGraphicsView):
                 factor = min(view_rect.width() / scene_rect.width(),
                              view_rect.height() / scene_rect.height())
                 self.scale(factor, factor)
+                self._base_scale = float(self.transform().m11())
                 self._emit_zoom()
                 self._min_scale = self.transform().m11()
 
@@ -49,21 +53,21 @@ class ImageViewer(QGraphicsView):
     def wheelEvent(self, event):
         """Responsible for Zoom.Redefines base function"""
         if not self.b_isEmpty:
-            if self._enableZoomPan:
-                factor = self._scaling_factor if event.angleDelta().y() > 0 else 1/self._scaling_factor
-                self.scale(factor, factor)
-                current_scale = self.transform().m11()
-                if current_scale < self._min_scale:
-                    correction = self._min_scale / current_scale
-                    self.scale(correction, correction)
-                elif current_scale > self._max_scale:
-                    correction = self._max_scale / current_scale
-                    self.scale(correction, correction)
+            factor = self._scaling_factor if event.angleDelta().y() > 0 else 1/self._scaling_factor
+            self.scale(factor, factor)
+            current_scale = self.transform().m11()
+            if current_scale < self._min_scale:
+                correction = self._min_scale / current_scale
+                self.scale(correction, correction)
+            elif current_scale > self._max_scale:
+                correction = self._max_scale / current_scale
+                self.scale(correction, correction)
+            self._emit_zoom()
 
     def keyPressEvent(self, event) -> None:
         if not self.b_isEmpty:
             if event.key() == Qt.Key.Key_Control:
-                self._enableZoomPan = True
+                self._enablePan = True
                 self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
             elif event.key() == Qt.Key.Key_Left:
                 self.sNextFile.emit(-1)
@@ -71,15 +75,18 @@ class ImageViewer(QGraphicsView):
                 self.sNextFile.emit(1)
             elif event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
                 self.sEnterPressed.emit()
+            elif event.key() == Qt.Key.Key_Escape:
+                self.sEscapePressed.emit()
 
     def keyReleaseEvent(self, event) -> None:
         if not self.b_isEmpty:
             if event.key() == Qt.Key.Key_Control:
-                self._enableZoomPan = False
+                self._enablePan = False
                 self.setDragMode(QGraphicsView.DragMode.NoDrag)
 
     def _emit_zoom(self):
-        current_zoom = float(self.transform().m11())
+        """emits the zoom level relative to the 'fit to view' scale"""
+        current_zoom = float(self.transform().m11()) / self._base_scale
         parent = self.parentWidget()
         if hasattr(parent, "sZoomChanged"):
             parent.sZoomChanged.emit(current_zoom)
