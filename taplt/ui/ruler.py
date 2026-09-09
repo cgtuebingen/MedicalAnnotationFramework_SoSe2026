@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QWidget
 from PySide6.QtGui import QFont, QPainter, QColor
 from PySide6.QtCore import Qt
 
-from taplt.utils.stylesheets import FONT_SMALL
+from taplt.utils.stylesheets import FONT_SMALL, current_theme
 
 
 NICE_INTERVALS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000]
@@ -122,6 +122,17 @@ def read_slide_metadata(slide) -> dict:
     avg_mpp = (mpp_x + mpp_y) / 2.0
     return create_physical_context(avg_mpp) 
 
+def parse_color(value: str) -> QColor:
+    """Converts theme color strings into valid QColor objects."""
+    if value.startswith("rgb"):
+        try:
+            r, g, b = map(int, value[4:-1].split(","))
+            return QColor(r, g, b)
+        except Exception:
+            return QColor()  # invalid
+    return QColor(value)
+
+
 
 class RulerWidget(QWidget):
 
@@ -191,15 +202,21 @@ class RulerWidget(QWidget):
         return format_measurement_value(value, unit)
 
     def paintEvent(self, event):
+        
         painter = QPainter(self)
+        c = current_theme()
+
+        
+        bg_color = parse_color(c["ruler_bg"])
+        line_color = parse_color(c["ruler_line"])
 
         pen = painter.pen()
-        pen.setColor(QColor(95, 95, 95))
+        pen.setColor(line_color)
         pen.setWidth(1)
         painter.setPen(pen)
 
         # Draw the ruler background
-        painter.fillRect(self.rect(), QColor(240, 240, 240))
+        painter.fillRect(self.rect(), bg_color)
 
         # Draw the ruler ticks and labels based on orientation
         if self.orientation == self.HORIZONTAL:
@@ -284,3 +301,7 @@ class RulerWidget(QWidget):
 
         # Draw the baseline at the bottom
         painter.drawLine(self.width() - 1, 0, self.width() - 1, self.height())
+
+    def refresh_theme(self):
+        """triggers a repaint so the ruler picks up the new theme colors"""
+        self.update()

@@ -9,10 +9,12 @@ FONT_LARGE = 13
 THEMES = {
     "light": dict(bg="rgb(240,240,240)", bg_header="rgb(186,189,182)",
                   bg_hover="rgb(220,220,220)", bg_selected="rgb(180,200,230)",
-                  text="black", text_selected="black", border="lightgray"),
+                  text="black", text_selected="black", border="lightgray", 
+                  ruler_bg="rgb(240,240,240)", ruler_line="rgb(95,95,95)"),
     "dark": dict(bg="rgb(45,45,45)", bg_header="rgb(60,60,60)",
                  bg_hover="rgb(70,70,70)", bg_selected="rgb(70,100,140)",
-                 text="white", text_selected="black", border="rgb(80,80,80)"),
+                 text="white", text_selected="black", border="rgb(80,80,80)",
+                 ruler_bg="rgb(45,45,45)", ruler_line="rgb(200,200,200)"),
 }
 
 ACTIVE_THEME = "light"  
