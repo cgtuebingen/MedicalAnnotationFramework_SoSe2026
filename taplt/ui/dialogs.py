@@ -474,10 +474,15 @@ class SettingDialog(QDialog):
     def save_settings(self):
         for idx in range(self.preferences.count()):
             item = self.preferences.item(idx)
-            key = item.text()
-            value = True if item.checkState() == Qt.CheckState.Checked else False
-            self.settings.append((key, value))
-
+            kname = item.data(Qt.ItemDataRole.UserRole)
+            if kname is not None:
+                # slider-based setting (e.g. Zoom speed)
+                value = item.data(Qt.ItemDataRole.UserRole + 1)
+                self.settings.append((kname, value))
+            else:
+                key = item.text()
+                value = True if item.checkState() == Qt.CheckState.Checked else False
+                self.settings.append((key, value))
         self.settings.append(("Font size", self.font_size_combo.currentText()))
         self.close()
 

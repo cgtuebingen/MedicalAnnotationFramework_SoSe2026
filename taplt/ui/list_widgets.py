@@ -404,8 +404,63 @@ class SettingList(QListWidget):
         self.setSpacing(5)
         self.setStyleSheet(SETTING_STYLESHEET)
         for setting in settings:
-            item = QListWidgetItem(setting[0])
-            checked = Qt.CheckState.Checked if normalize_setting_value(setting[1]) else Qt.CheckState.Unchecked
-            item.setCheckState(checked)
-            item.setToolTip(setting[2])
-            self.addItem(item)
+            name, value, hint = setting
+            if isinstance(value, bool):
+                item = QListWidgetItem(name)
+                checked = Qt.CheckState.Checked if value else Qt.CheckState.Unchecked
+                item.setCheckState(checked)
+                item.setToolTip(hint)
+                self.addItem(item)
+            else:
+                self._add_slider_item(name, float(value), hint)
+
+    def _add_slider_item(self, name: str, value: float, hint: str):
+        item = QListWidgetItem()
+        item.setToolTip(hint)
+        item.setData(Qt.ItemDataRole.UserRole, name)
+        item.setData(Qt.ItemDataRole.UserRole + 1, value)
+
+        widget = QWidget()
+        layout = QHBoxLayout(widget)
+        layout.setContentsMargins(5, 0, 5, 0)
+
+        label = QLabel(name)
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setRange(1, 10)
+        initial_position = zoom_factor_to_slider(value)
+        slider.setValue(initial_position)
+
+        value_label = QLabel(f"{initial_position}")
+        value_label.setFixedWidth(35)
+
+        def on_change(v):
+            scaled = zoom_slider_to_factor(v)
+            value_label.setText(f"{v}")
+            item.setData(Qt.ItemDataRole.UserRole + 1, scaled)
+
+        slider.valueChanged.connect(on_change)
+
+        layout.addWidget(label)
+        layout.addWidget(slider)
+        layout.addWidget(value_label)
+        widget.setLayout(layout)
+
+        item.setSizeHint(widget.sizeHint())
+        self.addItem(item)
+        self.setItemWidget(item, widget)
+
+def zoom_slider_to_factor(value: int) -> float:
+    """Maps an integer slider position (1-10) to a zoom-speed factor (1.01-2.0), with position 5 pinned to 1.10."""
+    if value <= 5:
+        factor = 1.01 + (value - 1) * (1.10 - 1.01) / 4
+    else:
+        factor = 1.10 + (value - 5) * (2.0 - 1.10) / 5
+    return round(factor, 2)
+
+def zoom_factor_to_slider(factor: float) -> int:
+    """Inverse of zoom_slider_to_factor - nearest slider position for a given factor."""
+    if factor <= 1.10:
+        value = 1 + (factor - 1.01) * 4 / (1.10 - 1.01)
+    else:
+        value = 5 + (factor - 1.10) * 5 / (2.0 - 1.10)
+    return max(1, min(10, round(value)))

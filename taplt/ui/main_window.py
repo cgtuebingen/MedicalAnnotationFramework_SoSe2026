@@ -270,6 +270,8 @@ class LabelingMainWindow(QMainWindow):
                 self.sRequestUpdate.emit(self.img_idx)
             elif setting[0] == "Display patient name":
                 self.file_display.patient_label.setVisible(normalize_setting_value(setting[1]))
+            elif setting[0] == "Zoom Speed":
+                self.file_display.image_viewer.set_zoom_speed(float(setting[1]))
             elif setting[0] == "Font size":
                 value = str(setting[1]).lower()
                 if value == "small":
