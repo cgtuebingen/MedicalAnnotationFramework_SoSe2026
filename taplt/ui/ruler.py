@@ -122,6 +122,17 @@ def read_slide_metadata(slide) -> dict:
     avg_mpp = (mpp_x + mpp_y) / 2.0
     return create_physical_context(avg_mpp) 
 
+def parse_color(value: str) -> QColor:
+    """Converts theme color strings into valid QColor objects."""
+    if value.startswith("rgb"):
+        try:
+            r, g, b = map(int, value[4:-1].split(","))
+            return QColor(r, g, b)
+        except Exception:
+            return QColor()  # invalid
+    return QColor(value)
+
+
 
 class RulerWidget(QWidget):
 
@@ -191,16 +202,21 @@ class RulerWidget(QWidget):
         return format_measurement_value(value, unit)
 
     def paintEvent(self, event):
+        
         painter = QPainter(self)
         c = current_theme()
 
+        
+        bg_color = parse_color(c["ruler_bg"])
+        line_color = parse_color(c["ruler_line"])
+
         pen = painter.pen()
-        pen.setColor(QColor(c["ruler_line"]))
+        pen.setColor(line_color)
         pen.setWidth(1)
         painter.setPen(pen)
 
         # Draw the ruler background
-        painter.fillRect(self.rect(), QColor(c["ruler_bg"]))
+        painter.fillRect(self.rect(), bg_color)
 
         # Draw the ruler ticks and labels based on orientation
         if self.orientation == self.HORIZONTAL:
