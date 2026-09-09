@@ -36,8 +36,8 @@ and allows for creating annotation projects where you can:
 2. assign patient names or IDs
 3. mark areas in the image and assign labels to them
 
-<img width="639" alt="Example Preview 1" src="https://github.com/user-attachments/assets/d6e4a634-ed8a-465a-bb62-c2e587619624" />
-<img width="638" alt="Example Preview 2" src="https://github.com/user-attachments/assets/2e7e101e-ab3d-4281-836d-4a141386ed34" />
+<img width="639" alt="Example Preview 1" src="taplt\macros\examples\demo\Example Preview 1-reduced.jpg" />
+<img width="638" alt="Example Preview 2" src="taplt\macros\examples\demo\Example Preview 1-reduced.jpg" />
 
 
 
