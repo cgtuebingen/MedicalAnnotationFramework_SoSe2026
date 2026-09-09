@@ -39,6 +39,8 @@ and allows for creating annotation projects where you can:
 <img alt="Demo 5" src="taplt/macros/examples/demo/Demo5.png" title="Demo 5" width="650"/>
 <img alt="Demo 6" src="taplt/macros/examples/demo/Demo6.png" title="Demo 6" width="650"/>
 <img alt="Demo 7" src="taplt/macros/examples/demo/Demo7.png" title="Demo 7" width="650"/>
+<img width="639" alt="Example Preview 1" src="taplt\macros\examples\demo\Example Preview 1-reduced.jpg" />
+<img width="638" alt="Example Preview 2" src="taplt\macros\examples\demo\Example Preview 2-reduced.jpg" />
 
 
 
