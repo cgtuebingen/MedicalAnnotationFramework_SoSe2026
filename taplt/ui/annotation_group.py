@@ -272,6 +272,7 @@ class AnnotationGroup(QGraphicsObject):
             self.temp_shape.group_id = self.classes.index(label)
             self.temp_shape.label = label
             self.temp_shape.set_mode(Shape.ShapeMode.FIXED)
+            self.temp_shape.setToolTip(label)
             self.updateShapes.emit(list(self.annotations.values()))
             self.sChange.emit(0)
             return
@@ -293,6 +294,7 @@ class AnnotationGroup(QGraphicsObject):
                 shape.group_id = group_id
                 shape.label = label
                 shape.set_mode(Shape.ShapeMode.FIXED)
+                shape.setToolTip(label)
             
             self.pending_shapes.clear()
             self.updateShapes.emit(
@@ -352,7 +354,6 @@ class AnnotationGroup(QGraphicsObject):
         x = self.offset_x + (scene_pos.x() - self.pixmap_x) * self.downsample
         y = self.offset_y + (scene_pos.y() - self.pixmap_y) * self.downsample
         return QPointF(x, y)
-
 
     def undo(self):
         if not self.undo_stack:
