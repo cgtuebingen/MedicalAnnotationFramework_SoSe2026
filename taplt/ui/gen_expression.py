@@ -297,6 +297,7 @@ class GenExpression(QGraphicsObject):
         self.drawing = False
         self.expressions = {}  # type: Dict[int, Shape]
         self.setAcceptHoverEvents(False)
+        self.setVisible(False)
     def paint(self, *args):
             pass
 

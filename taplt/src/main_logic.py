@@ -30,6 +30,8 @@ class MainLogic:
         self.main_window.sSendSpotsToDraw.connect(self.main_window.file_display.gen_expressions.recieveSpotsToDraw)
         self.main_window.sSendMatrixOfGenesAndBarcodes.connect(self.main_window.file_display.gen_expressions.recieveGenesBarcodeMatrix)
 
+        self.main_window.sToggleGenExpression.connect(self.main_window.file_display.gen_expressions.setVisible)
+
         # main window's menubar -> database
         self.main_window.menubar.sRequestImport.connect(self.database.send_import_info)
         self.main_window.menubar.sRequestImportLabelTable.connect(self.database.send_import_label_table)

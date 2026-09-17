@@ -12,7 +12,7 @@ from taplt.ui.toolbar import Toolbar
 from taplt.ui.dialogs import (SelectPatientDialog, CloseMessageBox, DeleteFileMessageBox,
                               ForgotToSaveMessageBox, SettingDialog, ProjectHandlerDialog)
 from taplt.ui.menu_bar import MenuBar
-from taplt.ui.list_widgets import FileViewingWidget, LabelsViewingWidget
+from taplt.ui.list_widgets import FileViewingWidget, LabelsViewingWidget, GenExpressionWidget
 from taplt.ui.annotation_tree import AnnotationTree
 from taplt.ui.welcome_screen import WelcomeScreen
 from taplt.utils.qt import colormap_rgb, get_icon
@@ -33,6 +33,42 @@ NUM_COLORS = 25
 DEFAULT_RIGHT_PANEL_WIDTH = 280
 MIN_RIGHT_PANEL_WIDTH = 180
 
+
+class WsiResolutionDialog(QDialog):
+    """Asks the user which resolution whole slide image (WSI) files should be loaded as"""
+
+    HIGH_RES = "high resolution PNG"
+    LOW_RES = "low resolution PNG"
+
+    def __init__(self, parent=None):
+        super(WsiResolutionDialog, self).__init__(parent)
+        self.setWindowTitle("WSI Resolution")
+        self.resolution = self.HIGH_RES  # default choice
+
+        self.setLayout(QVBoxLayout())
+
+        info_label = QLabel("Which resolution should whole slide image (WSI) files be loaded as?")
+        info_label.setWordWrap(True)
+        self.layout().addWidget(info_label)
+
+        self.high_res_button = QRadioButton(self.HIGH_RES)
+        self.low_res_button = QRadioButton(self.LOW_RES)
+        self.high_res_button.setChecked(True)
+
+        self.layout().addWidget(self.high_res_button)
+        self.layout().addWidget(self.low_res_button)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        button_box.accepted.connect(self.accept)
+        self.layout().addWidget(button_box)
+
+        self.high_res_button.toggled.connect(self._update_resolution)
+        self.low_res_button.toggled.connect(self._update_resolution)
+
+    def _update_resolution(self):
+        self.resolution = self.HIGH_RES if self.high_res_button.isChecked() else self.LOW_RES
+
+
 class LabelingMainWindow(QMainWindow):
     """The main window for the application"""
 
@@ -50,6 +86,9 @@ class LabelingMainWindow(QMainWindow):
     sSendSpotsToDraw = Signal(str)
     sSendMatrixOfGenesAndBarcodes = Signal(str)
     sAddLabelTable = Signal(str)
+    sSetWsiResolution = Signal(str)
+    sSetWsiResolution = Signal(str)
+    sToggleGenExpression = Signal(bool)
 
     @dataclass
     class Changes:
@@ -118,6 +157,11 @@ class LabelingMainWindow(QMainWindow):
         self.polygons_section = CollapsibleBox("Polygons")
         self.polygons_section.setContentWidget(self.polygons)
 
+        self.gen_expression = GenExpressionWidget()
+        self.gen_expression_section = CollapsibleBox("Gen Expression")
+        self.gen_expression_section.setContentWidget(self.gen_expression)
+        self.gen_expression.sToggled.connect(self.sToggleGenExpression.emit)
+
         self.file_list = FileViewingWidget()
         self.file_list.file_label.hide()  # header now provided by the collapsible box
         self.file_list_section = CollapsibleBox("File List")
@@ -125,6 +169,7 @@ class LabelingMainWindow(QMainWindow):
 
         self.right_menu_widget.layout().addWidget(self.labels_section)
         self.right_menu_widget.layout().addWidget(self.polygons_section)
+        self.right_menu_widget.layout().addWidget(self.gen_expression_section)
         self.right_menu_widget.layout().addWidget(self.file_list_section)
 
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -162,7 +207,7 @@ class LabelingMainWindow(QMainWindow):
 
         self.toolBar = Toolbar(self.center_frame)
         self.toolBar.show()
-        self.toolBar.raise_() 
+        self.toolBar.raise_()
         QTimer.singleShot(0, self._position_toolbar)
 
         # Toolbar setup actions for images, videos and whole slides
@@ -170,7 +215,7 @@ class LabelingMainWindow(QMainWindow):
         self.toolBar.init_actions('slide', self.define_wsi_actions())
         self.toolBar.init_actions('video', self.define_video_actions())
         self.file_display.modalitySwitched.connect(self.toolBar.switch_modality)
-        
+
         # Show tooltip while drawing
         self.file_display.sDrawingTooltip.connect(self.set_tool_tip)
 
@@ -179,9 +224,10 @@ class LabelingMainWindow(QMainWindow):
         self.changes = list()
         self.autoSave = False
         self.project_location = ""
+        self.wsi_resolution = WsiResolutionDialog.HIGH_RES
 
         self.macros = Macros()
-        
+
         # welcome screen
         self.set_welcome_screen(True)
 
@@ -210,6 +256,7 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sCloseProject.connect(self.close_project)
         self.menubar.sExampleProject.connect(self.macros.example_project)
         self.menubar.sGenExpression.connect(self.loadGenExpressions)
+        self.gen_expression.sLoadRequested.connect(self.loadGenExpressions)
         self.labels_list.label_table.sImportRequested.connect(self.menubar.sRequestImportLabelTable.emit)
         self.labels_list.sCsvFilesDropped.connect(self.import_dropped_label_tables)
 
@@ -385,7 +432,6 @@ class LabelingMainWindow(QMainWindow):
         self.toolBar.move(x, y)
         self.toolBar.raise_()
 
-
     def import_file(self, existing_patients: list):
         """executes a dialog to let the user enter all information regarding file import"""
         dlg = SelectPatientDialog(existing_patients)
@@ -436,6 +482,12 @@ class LabelingMainWindow(QMainWindow):
             dlg.exec()
             if dlg.project_path:
                 database_path = dlg.project_path + Structure.DATABASE_DEFAULT_NAME
+
+                res_dlg = WsiResolutionDialog(self)
+                res_dlg.exec()
+                self.wsi_resolution = res_dlg.resolution
+                self.sSetWsiResolution.emit(self.wsi_resolution)
+
                 self.set_welcome_screen(False)
                 self.sCreateNewProject.emit(database_path, dlg.files)
                 self.menubar.enable_tools()
@@ -452,6 +504,11 @@ class LabelingMainWindow(QMainWindow):
 
                 # make sure the database is inside a project environment
                 if check_environment(str(Path(database).parents[0])):
+                    res_dlg = WsiResolutionDialog(self)
+                    res_dlg.exec()
+                    self.wsi_resolution = res_dlg.resolution
+                    self.sSetWsiResolution.emit(self.wsi_resolution)
+
                     self.sOpenProject.emit(database)
                     self.set_welcome_screen(False)
                     self.menubar.enable_tools()
@@ -472,7 +529,6 @@ class LabelingMainWindow(QMainWindow):
         """shows or hides the entire right-hand side panel via the hamburger button"""
         self.right_menu_widget.setVisible(checked and not self.welcome_screen.isVisible())
 
-
     def open_settings(self, settings: list):
         """opens up the settings dialog, sends signal to save them"""
         dlg = SettingDialog(settings)
@@ -480,19 +536,22 @@ class LabelingMainWindow(QMainWindow):
         s = dlg.settings
         if dlg.settings:
             self.apply_settings(dlg.settings)
+
     def loadGenExpressions(self):
+        print("loadGenExpressions called, self id:", id(self), "gen_expression widget id:", id(self.gen_expression))
         spatial_path, _ = QFileDialog.getOpenFileName(self,
-                                                caption="Select GenExpressions csv tissue positions",
-                                                dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",#str(Path.home()),
-                                                filter="Database (*.csv)",
-                                                options=QFileDialog.Option.DontUseNativeDialog)
+                                                      caption="Select GenExpressions csv tissue positions",
+                                                      dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",
+                                                      # str(Path.home()),
+                                                      filter="Database (*.csv)",
+                                                      options=QFileDialog.Option.DontUseNativeDialog)
         if spatial_path:
             self.sSendSpotsToDraw.emit(spatial_path)
             expression_path, _ = QFileDialog.getOpenFileName(self,
-                                                        caption="Select GenExpressions h5 Matrix",
-                                                        dir=str("/".join(spatial_path.split("/")[:-2])+"/"),
-                                                        filter="Database (*.h5)",
-                                                        options=QFileDialog.Option.DontUseNativeDialog)
+                                                             caption="Select GenExpressions h5 Matrix",
+                                                             dir=str("/".join(spatial_path.split("/")[:-2]) + "/"),
+                                                             filter="Database (*.h5)",
+                                                             options=QFileDialog.Option.DontUseNativeDialog)
             if expression_path:
                 self.sSendMatrixOfGenesAndBarcodes.emit(expression_path)
 
@@ -518,7 +577,7 @@ class LabelingMainWindow(QMainWindow):
         annotations = [
             shape for shape in self.file_display.annotations.annotations.values()
             if shape.isVisible()
-        ]    
+        ]
         self.changes.clear()
         self.sSaveToDatabase.emit(annotations, self.img_idx)
         self.file_display.annotations.clear_history()
@@ -540,7 +599,8 @@ class LabelingMainWindow(QMainWindow):
         self.right_panel_toggle.setVisible(not b)
         self.menubar.nav_widget.setVisible(not b)
 
-    def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list, label_table_path: str = ""):
+    def update_window(self, files: list, img_idx, patient: str, classes: list, labels: list,
+                      label_table_path: str = ""):
         """main updating function: all necessary information is passed to the main window"""
         self.img_idx = img_idx
         if label_table_path:
@@ -564,14 +624,12 @@ class LabelingMainWindow(QMainWindow):
 
         self.update_toolbar()
         QTimer.singleShot(50, self._reposition_zoom_label)
-        
-        
+
     def update_toolbar(self):
         self.toolBar.adjustSize()
-        
+
         if not self.toolBar._moved_by_user:
             self._position_toolbar()
-
 
     def define_img_actions(self):
         actions = (Action(self,
@@ -603,7 +661,7 @@ class LabelingMainWindow(QMainWindow):
                           icon="ellipse_tool",
                           tip="Draw Ellipse",
                           checkable=True),
-                    Action(self,
+                   Action(self,
                           "Circle",
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('circle')),
@@ -616,14 +674,14 @@ class LabelingMainWindow(QMainWindow):
                                    self.file_display.annotations.set_type('rectangle')),
                           icon="rect_tool",
                           tip="Draw Rectangle",
-                          checkable=True),                 
-                    Action(self,
-                           "Point",
-                           lambda: (self.file_display.annotations.set_mode(1), 
-                                    self.file_display.annotations.set_type('point')),
-                            icon="point_tool",
-                           tip="Draw Point",
-                           checkable=True))
+                          checkable=True),
+                   Action(self,
+                          "Point",
+                          lambda: (self.file_display.annotations.set_mode(1),
+                                   self.file_display.annotations.set_type('point')),
+                          icon="point_tool",
+                          tip="Draw Point",
+                          checkable=True))
         actions = list(actions)
         return actions
 
@@ -661,7 +719,7 @@ class LabelingMainWindow(QMainWindow):
                           icon="ellipse_tool",
                           tip="Draw Ellipse",
                           checkable=True),
-                    Action(self,
+                   Action(self,
                           "Circle",
                           lambda: (self.file_display.annotations.set_mode(1),
                                    self.file_display.annotations.set_type('circle'),
@@ -677,14 +735,14 @@ class LabelingMainWindow(QMainWindow):
                           icon="rect_tool",
                           tip="Draw Rectangle",
                           checkable=True),
-                    Action(self,
-                           "Point",
-                           lambda: (self.file_display.annotations.set_mode(1),
-                                    self.file_display.annotations.set_type('point'),
-                                    self.file_display.slide_viewer.setAnnotationMode(True)),
-                           icon="point_tool",
-                           tip="Draw Point",
-                            checkable=True))
+                   Action(self,
+                          "Point",
+                          lambda: (self.file_display.annotations.set_mode(1),
+                                   self.file_display.annotations.set_type('point'),
+                                   self.file_display.slide_viewer.setAnnotationMode(True)),
+                          icon="point_tool",
+                          tip="Draw Point",
+                          checkable=True))
         actions = list(actions)
         return actions
 
@@ -717,15 +775,15 @@ class LabelingMainWindow(QMainWindow):
                    )
         actions = list(actions)
         return actions
-    
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
         if not self.toolBar._moved_by_user:
             self._position_toolbar()
-        else: 
+        else:
             self.toolBar._clamp_to_parent()
-        
+
         self._reposition_zoom_label()
 
     def update_zoom_label(self, zoom_factor: float):
