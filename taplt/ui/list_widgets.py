@@ -400,6 +400,8 @@ def normalize_setting_value(value):
 
 class GenExpressionWidget(QWidget):
     """a checkable option, that is not wired up to any logic yet"""
+    sLoadRequested = Signal()
+
     def __init__(self):
         super(GenExpressionWidget, self).__init__()
         self.setLayout(QVBoxLayout())
@@ -408,6 +410,10 @@ class GenExpressionWidget(QWidget):
 
         self.some_checkbox = QCheckBox("Enable Gen-Expression")
         self.layout().addWidget(self.some_checkbox)
+
+        self.load_button = QPushButton("Load")
+        self.load_button.clicked.connect(self.sLoadRequested.emit)
+        self.layout().addWidget(self.load_button)
 
     def refresh_theme(self):
         """no theme-dependent styling, just for future proofing"""
