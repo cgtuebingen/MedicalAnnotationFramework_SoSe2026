@@ -87,6 +87,8 @@ class LabelingMainWindow(QMainWindow):
     sSendMatrixOfGenesAndBarcodes = Signal(str)
     sAddLabelTable = Signal(str)
     sSetWsiResolution = Signal(str)
+    sSetWsiResolution = Signal(str)
+    sToggleGenExpression = Signal(bool)
 
     @dataclass
     class Changes:
@@ -158,6 +160,7 @@ class LabelingMainWindow(QMainWindow):
         self.gen_expression = GenExpressionWidget()
         self.gen_expression_section = CollapsibleBox("Gen Expression")
         self.gen_expression_section.setContentWidget(self.gen_expression)
+        self.gen_expression.sToggled.connect(self.sToggleGenExpression.emit)
 
         self.file_list = FileViewingWidget()
         self.file_list.file_label.hide()  # header now provided by the collapsible box
@@ -252,7 +255,6 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sOpenProject.connect(self.open_project)
         self.menubar.sCloseProject.connect(self.close_project)
         self.menubar.sExampleProject.connect(self.macros.example_project)
-        self.menubar.sGenExpression.connect(self.loadGenExpressions)
         self.menubar.sGenExpression.connect(self.loadGenExpressions)
         self.gen_expression.sLoadRequested.connect(self.loadGenExpressions)
         self.labels_list.label_table.sImportRequested.connect(self.menubar.sRequestImportLabelTable.emit)
@@ -536,6 +538,7 @@ class LabelingMainWindow(QMainWindow):
             self.apply_settings(dlg.settings)
 
     def loadGenExpressions(self):
+        print("loadGenExpressions called, self id:", id(self), "gen_expression widget id:", id(self.gen_expression))
         spatial_path, _ = QFileDialog.getOpenFileName(self,
                                                       caption="Select GenExpressions csv tissue positions",
                                                       dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",
