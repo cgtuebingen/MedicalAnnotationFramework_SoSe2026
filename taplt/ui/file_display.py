@@ -31,6 +31,9 @@ class CenterDisplayWidget(QWidget):
     def __init__(self, *args):
         super(CenterDisplayWidget, self).__init__(*args)
 
+        self.parent_window = None
+
+
         # main components of the display
         self.scene = QGraphicsScene()
         self.image_viewer = ImageViewer(self.scene)
