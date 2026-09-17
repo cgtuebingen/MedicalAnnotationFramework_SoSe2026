@@ -1,5 +1,11 @@
 import argparse
+import os
 import sys
+
+# Qt's Wayland backend ignores move() for top-level windows, which can place
+# modal dialogs behind the main window. Use X11 via XWayland on Linux.
+if sys.platform.startswith("linux"):
+    os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
 
 from pathlib import Path
 from PySide6.QtWidgets import QApplication
