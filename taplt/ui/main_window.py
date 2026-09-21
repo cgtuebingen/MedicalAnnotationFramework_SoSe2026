@@ -47,7 +47,7 @@ class LabelingMainWindow(QMainWindow):
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
     sRequestImportInfo = Signal()
-    sSendSpotsToDraw = Signal(str)
+    sSendSpotsToDraw = Signal(str, str)
     sSendMatrixOfGenesAndBarcodes = Signal(str)
     sAddLabelTable = Signal(str)
 
@@ -481,13 +481,18 @@ class LabelingMainWindow(QMainWindow):
         if dlg.settings:
             self.apply_settings(dlg.settings)
     def loadGenExpressions(self):
+        scaling_path, _ = QFileDialog.getOpenFileName(self,
+                                                caption="Select GenExpressions Scaling.json",
+                                                dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",#str(Path.home()),
+                                                filter="JSON (*.json)",
+                                                options=QFileDialog.Option.DontUseNativeDialog)
         spatial_path, _ = QFileDialog.getOpenFileName(self,
                                                 caption="Select GenExpressions csv tissue positions",
                                                 dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",#str(Path.home()),
                                                 filter="Database (*.csv)",
                                                 options=QFileDialog.Option.DontUseNativeDialog)
         if spatial_path:
-            self.sSendSpotsToDraw.emit(spatial_path)
+            self.sSendSpotsToDraw.emit(spatial_path, scaling_path)
             expression_path, _ = QFileDialog.getOpenFileName(self,
                                                         caption="Select GenExpressions h5 Matrix",
                                                         dir=str("/".join(spatial_path.split("/")[:-2])+"/"),

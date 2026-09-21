@@ -16,6 +16,7 @@ from copy import deepcopy
 import numpy as np
 import pandas
 import h5py
+import json
 
 from taplt.config import SCALING_INITIAL
 
@@ -355,29 +356,55 @@ class GenExpression(QGraphicsObject):
         """
         self.remove_shapes(list(self.expressions.values()))
     @Slot()
-    def recieveSpotsToDraw(self, spatial_path):
-        f = pandas.read_csv(spatial_path)  
+    def recieveSpotsToDraw(self, spatial_path, scaling_path):
+        f = pandas.read_csv(spatial_path)
         spots = [{"barcode":barcode,
                   "pxl_row":pxl_row_in_fullres,
                   "pxl_col":pxl_col_in_fullres} for [barcode,_,_,_,pxl_row_in_fullres,pxl_col_in_fullres] in f.to_numpy()]
-        print("Recieved:\t", len(spots), type(spots))
+        #print("Recieved:\t", len(spots), type(spots))
+        scaling_factor = 0
+
+        if scaling_path:
+            pass
+            # Open PopUp to select right factor
+            #   Example Values:
+            regist_target_img_scalef = 0.16836435
+            tissue_hires_scalef = 0.056121446
+            tissue_lowres_scalef = 0.016836435
+            fiducial_diameter_fullres = 384.18505640709947
+            spot_diameter_fullres = 256.12337093806633
+
+            with open(scaling_path, "r") as file:
+                data = json.load(file)
+            keys:str = data.keys()
+            factors_to_choose_from_keys = []
+            for key in keys:
+                if key.endswith("_scalef"):
+                    name = " ".join([word[0].upper()+word[1:] for word in key.split("_")[:-1]])
+                    factors_to_choose_from_keys.append(name)
+            print("factors_to_choose_from_keys", factors_to_choose_from_keys)
+            if (len(factors_to_choose_from_keys) == 0):
+                raise Exception("JSON File has no scalef entries!")
+            # OPEN POPUP
+
+            scaling_factor = tissue_hires_scalef
+            
+        if scaling_factor == 0: 
+            print("No Scaling Factor given")
+            scaling_factor = 0.056121446
 
         self.clear()
         self.update()
 
         # TODO Scalling by scalfactors.json
-        regist_target_img_scalef = 0.16836435
-        tissue_hires_scalef = 0.056121446
-        tissue_lowres_scalef = 0.016836435
-        fiducial_diameter_fullres = 384.18505640709947
-        spot_diameter_fullres = 256.12337093806633
-        radius:float = (spots[1].get("pxl_col") - spots[0].get("pxl_col")) * tissue_hires_scalef /3.0
+        
+        radius:float = (spots[1].get("pxl_col") - spots[0].get("pxl_col")) * scaling_factor /3.0
         shapes:List[Shape] = []
         s = self.scene()
         
         for spot in spots:
-            x = int(spot.get("pxl_col") * tissue_hires_scalef)
-            y = int(spot.get("pxl_row") * tissue_hires_scalef)
+            x = int(spot.get("pxl_col") * scaling_factor)
+            y = int(spot.get("pxl_row") * scaling_factor)
 
             point = [QPointF(x,y), QPointF(x+radius,y)]
             shapes.append(Shape(image_size=QSize(int(s.width()), int(s.height())),
@@ -391,7 +418,6 @@ class GenExpression(QGraphicsObject):
     def recieveGenesBarcodeMatrix(self, matrix_path:str):
         expression_content = h5py.File(matrix_path, 'r')
         hd5f_keys = np.array(expression_content["matrix"])
-        print(list(hd5f_keys))
         matrix  = expression_content["matrix"]
         self.matrix = matrix
         def decoder(a:bytes):
