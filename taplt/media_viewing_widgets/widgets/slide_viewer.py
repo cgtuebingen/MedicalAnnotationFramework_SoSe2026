@@ -18,6 +18,7 @@ class SlideView(QGraphicsView):
     pixmapFinished = Signal()
     sZoomChanged = Signal(float)
     sEnterPressed = Signal()
+    sEscapePressed = Signal()
 
     sViewChanged = Signal(float, float, float, float, float)
 
@@ -391,6 +392,8 @@ class SlideView(QGraphicsView):
     def keyPressEvent(self, event) -> None:
         if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
             self.sEnterPressed.emit()
+        elif event.key() == Qt.Key.Key_Escape:
+            self.sEscapePressed.emit()
     def emit_view_params(self):
         if self.slide is None:
             return

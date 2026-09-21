@@ -63,6 +63,7 @@ class Shape(QGraphicsObject):
         if label_dict:
             if 'label' in label_dict:
                 self.label = label_dict['label']
+                self.setToolTip(self.label or "")
             if 'points' in label_dict:
                 _points = [QPointF(_pt[0], _pt[1]) for _pt in label_dict['points']]
             if 'shape_type' in label_dict:
@@ -79,6 +80,7 @@ class Shape(QGraphicsObject):
             self.flags = flags
             self.group_id = group_id
             self.comment = ""
+            self.setToolTip(self.label or "")
 
         self._path = None  # only necessary for the temporary Polygon and trace
         self._anchorPoint = None
@@ -93,6 +95,8 @@ class Shape(QGraphicsObject):
         self.init_shape()
         self.scene_size: Tuple[float, float] = (1e7, 1e7)
         self.set_mode(mode)
+        self.finished_by_right_click = False
+
 
     def set_mode(self, mode: Union[ShapeMode, int]):
         self.mode = mode
@@ -166,8 +170,17 @@ class Shape(QGraphicsObject):
                             np.array((0, 0)),
                             (self.image_size.width(), self.image_size.height()))
         return QPointF(scene_pos[0], scene_pos[1])
+    
+    def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:\
 
-    def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
+        if self.finished_by_right_click:
+            self.finished_by_right_click = False
+            event.accept()
+            return
+
+        if self.mode == Shape.ShapeMode.CREATE:
+            event.ignore()
+            return
         pos = event.screenPos()
         menu = QMenu()
 
@@ -219,12 +232,18 @@ class Shape(QGraphicsObject):
             else:
                 event.ignore()
         elif event.button() == Qt.MouseButton.RightButton:
-            if self.shape_type == "polygon" and self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1:
+            if self.shape_type == "polygon":
+                can_finish = (self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 1)
+            else:
+                can_finish = (self.mode == Shape.ShapeMode.CREATE and len(self.vertices.vertices) > 0)
+            if can_finish:
+                self.finished_by_right_click = True
                 self.ungrabMouse()
                 self.is_closed_path = True
                 self.set_mode(Shape.ShapeMode.FIXED)
                 self.drawingDone.emit()
                 event.accept()
+                return
 
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):

@@ -16,9 +16,11 @@ s4 = ("Font size",
       "medium",
       "Font size for the toolbar, menu, and side panels (small/medium/large)")
 
+s5 = ("Zoom Speed",
+      1.1,
+      "Let's you change the zoom speed")
 
-SETTINGS = [s1, s2, s3, s4]
-
+SETTINGS = [s1, s2, s3, s4, s5]
 
 def get_tooltip(setting: str):
     for s in SETTINGS:

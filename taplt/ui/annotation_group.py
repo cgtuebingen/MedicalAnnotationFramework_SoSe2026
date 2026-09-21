@@ -55,10 +55,11 @@ class AnnotationGroup(QGraphicsObject):
     @Slot()
     def set_drawing_to_false(self):
         self.drawing = False
+        self.temp_shape = None
         if self.pending_shapes:
-            self.sToolTip.emit("Press Enter to label all annotations.")
+            self.sToolTip.emit("Press Enter to label annotations")
         else: 
-            self.sToolTip.emit("")
+            self.standby_tooltip()
         
         if self.current_view_params is not None:
             offset_x, offset_y, pixmap_x, pixmap_y, downsample = self.current_view_params
@@ -114,19 +115,14 @@ class AnnotationGroup(QGraphicsObject):
                                     color=self.draw_new_color)
             self.add_shapes(self.temp_shape)
             self.temp_shape.drawingDone.connect(self.set_drawing_to_false)
-            if self.shapeType == Shape.ShapeType.POINT:
-                self.sToolTip.emit("Click to place the point")
-           
            
             if self.shapeType == "circle":
                 def delete():
                     self.set_drawing_to_false()
                     self.remove_shapes([self.temp_shape])
-                self.temp_shape.sIllegalCircleOnBorder.connect(delete)
-            if self.shapeType == Shape.ShapeType.POLYGON:
-                self.sToolTip.emit("Press right click to end the annotation.")
-            else:
-                self.sToolTip.emit("Press left click a 2nd time to end the annotation.")       
+                self.temp_shape.sIllegalCircleOnBorder.connect(delete)  
+
+            self.drawing_tooltip()    
             self.temp_shape.grabMouse()
             if event is not None:
                 self.forward_click(event)
@@ -183,6 +179,14 @@ class AnnotationGroup(QGraphicsObject):
         """
         if shapes is None:
             return
+        if isinstance(shapes, Shape) and shapes is self.temp_shape:
+            self.cancel_drawing()
+            return
+        if isinstance(shapes, list) and self.temp_shape in shapes:
+            self.cancel_drawing()
+            shapes = [s for s in shapes if s is not self.temp_shape]
+            if not shapes:
+                return
         if isinstance(shapes, Shape):
             dlg = DeleteShapeMessageBox(shapes.label)
             dlg.exec()
@@ -202,7 +206,31 @@ class AnnotationGroup(QGraphicsObject):
                 updated_pending_shapes.append(shape)
         self.pending_shapes = updated_pending_shapes
         self.updateShapes.emit(list(self.annotations.values()))
+    
+    def cancel_drawing(self):
+        "cancels current drawing and removes the temp shape from the scene and group"
+        if not self.drawing or self.temp_shape is None:
+            return
+        shape = self.temp_shape
+        self.drawing = False
+        if shape.scene() is not None:
+            shape.scene().removeItem(shape)
+        ids_to_remove = [s_id for s_id, s in self.annotations.items() if s is shape]
+        for s_id in ids_to_remove:
+            self.annotations.pop(s_id)
+        if shape in self.pending_shapes:
+            self.pending_shapes.remove(shape)
+        
+        shape.deleteLater()
+        self.temp_shape = None
+        self.updateShapes.emit(list(self.annotations.values()))
 
+        if self.pending_shapes:
+            self.sToolTip.emit("Press Enter to label annotations")
+        else:
+            self.sToolTip.emit("")
+        self.updateShapes.emit(list(self.annotations.values()))
+        
     def clear(self):
         """
         Clears the group and scene of shapes
@@ -239,6 +267,7 @@ class AnnotationGroup(QGraphicsObject):
             self.temp_shape.group_id = self.classes.index(label)
             self.temp_shape.label = label
             self.temp_shape.set_mode(Shape.ShapeMode.FIXED)
+            self.temp_shape.setToolTip(label)
             self.updateShapes.emit(list(self.annotations.values()))
             self.sChange.emit(0)
             return
@@ -260,8 +289,10 @@ class AnnotationGroup(QGraphicsObject):
                 shape.group_id = group_id
                 shape.label = label
                 shape.set_mode(Shape.ShapeMode.FIXED)
+                shape.setToolTip(label)
             
             self.pending_shapes.clear()
+            self.standby_tooltip()
             self.updateShapes.emit(
                 list(self.annotations.values())
             )
@@ -273,12 +304,18 @@ class AnnotationGroup(QGraphicsObject):
 
     def set_mode(self, mode: Union[AnnotationMode, int]):
         self.mode = mode
+        if self.mode == AnnotationGroup.AnnotationMode.EDIT:
+            self.sToolTip.emit("Select a tool")
+        elif not self.drawing:
+            self.standby_tooltip()
 
     def set_type(self, type_of_shape: Union[Shape.ShapeType, str]):
         """
         Sets the type of the shape when an icon is clicked in the annotation toolbar
         """
         self.shapeType = type_of_shape
+        if self.mode == AnnotationGroup.AnnotationMode.DRAW and not self.drawing:
+            self.standby_tooltip()
         
 
     def update_annotations(self, current_labels: List[Shape]):
@@ -320,7 +357,6 @@ class AnnotationGroup(QGraphicsObject):
         y = self.offset_y + (scene_pos.y() - self.pixmap_y) * self.downsample
         return QPointF(x, y)
 
-
     def undo(self):
         if not self.undo_stack:
             return
@@ -351,6 +387,29 @@ class AnnotationGroup(QGraphicsObject):
         self.updateShapes.emit(
             list(self.annotations.values())
         )
+
+    def standby_tooltip(self):
+        if self.mode == AnnotationGroup.AnnotationMode.EDIT:
+            self.sToolTip.emit("Select a tool")
+            return
+        if self.shapeType == "point":
+            self.sToolTip.emit("Click to place point")
+        elif self.shapeType == "polygon":
+            self.sToolTip.emit("Click to draw polygon")
+        elif self.shapeType == "ellipse":
+            self.sToolTip.emit("Drag to draw ellipse")
+        elif self.shapeType == "circle":
+            self.sToolTip.emit("Drag to draw circle")
+        elif self.shapeType == "rectangle":
+            self.sToolTip.emit("Drag to draw rectangle")
+        else:
+            self.sToolTip.emit("Click to trace outline")
+
+    def drawing_tooltip(self):
+        if self.shapeType == "polygon":
+            self.sToolTip.emit("Right-click to finish")
+        else:
+            self.sToolTip.emit("Click to finish")
 
 if __name__ == '__main__':
     from PySide6.QtGui import *

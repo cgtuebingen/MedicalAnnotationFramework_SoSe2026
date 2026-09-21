@@ -77,8 +77,10 @@ class LabelingMainWindow(QMainWindow):
 
         self.welcome_screen = WelcomeScreen()
         self.file_display = CenterDisplayWidget()
+        self.file_display.parent_window = self
         self.file_display.sZoomChanged.connect(self.update_zoom_label)
 
+    
         # zoom label on top right side
         self.zoom_label = QLabel("100%", self.file_display)
         self.zoom_label.setStyleSheet(OVERLAY_LABEL_STYLESHEET)
@@ -270,6 +272,8 @@ class LabelingMainWindow(QMainWindow):
                 self.sRequestUpdate.emit(self.img_idx)
             elif setting[0] == "Display patient name":
                 self.file_display.patient_label.setVisible(normalize_setting_value(setting[1]))
+            elif setting[0] == "Zoom Speed":
+                self.file_display.image_viewer.set_zoom_speed(float(setting[1]))
             elif setting[0] == "Font size":
                 value = str(setting[1]).lower()
                 if value == "small":
@@ -305,6 +309,11 @@ class LabelingMainWindow(QMainWindow):
         self.file_list.refresh_theme()
         self.toolBar.refresh_theme()
         self.polygons.refresh_theme()
+        self.file_display.top_ruler.refresh_theme()
+        self.file_display.left_ruler.refresh_theme()
+        self.labels_section.refresh_theme()
+        self.polygons_section.refresh_theme()
+        self.file_list_section.refresh_theme()
 
     def change_detected(self, change: int):
         """appends the detected change to the changes list"""

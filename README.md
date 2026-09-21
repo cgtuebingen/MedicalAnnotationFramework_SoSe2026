@@ -36,9 +36,11 @@ and allows for creating annotation projects where you can:
 2. assign patient names or IDs
 3. mark areas in the image and assign labels to them
 
-<img alt="Demo 2" src="taplt/macros/examples/demo/Demo2.png" title="Demo 2" width="650"/>
-<img alt="Demo 3" src="taplt/macros/examples/demo/Demo3.png" title="Demo 3" width="650"/>
-<img alt="Demo 4" src="taplt/macros/examples/demo/Demo4.png" title="Demo 4" width="650"/>
+<img alt="Demo 5" src="taplt/macros/examples/demo/Demo5.png" title="Demo 5" width="650"/>
+<img alt="Demo 6" src="taplt/macros/examples/demo/Demo6.png" title="Demo 6" width="650"/>
+<img alt="Demo 7" src="taplt/macros/examples/demo/Demo7.png" title="Demo 7" width="650"/>
+<img width="639" alt="Example Preview 1" src="taplt\macros\examples\demo\Example Preview 1-reduced.jpg" />
+<img width="638" alt="Example Preview 2" src="taplt\macros\examples\demo\Example Preview 2-reduced.jpg" />
 
 
 
@@ -58,7 +60,7 @@ After starting the software, it is possible to create an example project to get 
 Select "Macros -> Example" Project in the Menubar to do so.
 
 ### Creating Projects
-Select "New Project" in the Menubar to open up the project manager. 
+Click on "Create new Project" on the Homescreen or select "Project -> New Project" in the Menubar to open up the project manager. 
 There, you can select a project directory and add your first images.
 To open this project in your next session, click "Open Project" and navigate to your project directory. 
 After selecting the database file, the project will open up again.

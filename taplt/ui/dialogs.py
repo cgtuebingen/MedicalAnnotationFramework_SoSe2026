@@ -91,9 +91,10 @@ class DeleteFileMessageBox(QMessageBox):
 class DeleteShapeMessageBox(QMessageBox):
     def __init__(self, label: str, *args):
         super().__init__(*args)
+        display_label = label if label else "this annotation"
         self.setWindowTitle("Delete Annotation")
         self.setIcon(QMessageBox.Icon.Question)
-        self.setText("You are about to delete {}.\nContinue?".format(label))
+        self.setText("You are about to delete {}.\nContinue?".format(display_label))
         self.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
 
 
@@ -473,10 +474,15 @@ class SettingDialog(QDialog):
     def save_settings(self):
         for idx in range(self.preferences.count()):
             item = self.preferences.item(idx)
-            key = item.text()
-            value = True if item.checkState() == Qt.CheckState.Checked else False
-            self.settings.append((key, value))
-
+            kname = item.data(Qt.ItemDataRole.UserRole)
+            if kname is not None:
+                # slider-based setting (e.g. Zoom speed)
+                value = item.data(Qt.ItemDataRole.UserRole + 1)
+                self.settings.append((kname, value))
+            else:
+                key = item.text()
+                value = True if item.checkState() == Qt.CheckState.Checked else False
+                self.settings.append((key, value))
         self.settings.append(("Font size", self.font_size_combo.currentText()))
         self.close()
 
