@@ -79,7 +79,7 @@ class Shape(QGraphicsObject):
             self.comment = ""
 
         self._path = None  # only necessary for the temporary Polygon and trace
-        self._anchorPoint = None
+        self._anchorPoint = _points
         self.line_color, self.brush_color = QColor(), QColor()
         self.init_color(color)
         self.vertices = VertexCollection(_points)
@@ -121,7 +121,6 @@ class Shape(QGraphicsObject):
         self.setSelected(True)
         self.selected.emit()
         menu.exec(pos)
-
 
     def boundingRect(self) -> QRectF:
         if self.mode == Shape.ShapeMode.CREATE:
@@ -186,8 +185,6 @@ class Shape(QGraphicsObject):
             self._path.moveTo(self.vertices.vertices[0])
             for _pnt in self.vertices.vertices[1:]:
                 self._path.lineTo(_pnt)
-
-
 
     @property
     def is_closed_path(self) -> bool:
@@ -289,6 +286,7 @@ class VertexCollection(object):
 
 
 class GenExpression(QGraphicsObject):
+    sRequestWSIZoomData = Signal()
     def __init__(self, center:QPoint, radius:int):
         QGraphicsObject.__init__(self)
         self.center = center
@@ -345,20 +343,28 @@ class GenExpression(QGraphicsObject):
                                             color=self.draw_new_color, 
                                             points=point))
             self.add_shapes(shapes)
-            #self.temp_shape.drawingDone.connect(self.set_drawing_to_false)
-            #self.temp_shape.grabMouse()
             if event is not None:
                 self.forward_click(event)
         else:
             pass
+    def clear(self):
+        """
+        Clears the group and scene of shapes
+        Note: It takes some time for many objects
+        :return:
+        """
+        self.remove_shapes(list(self.expressions.values()))
     @Slot()
-    #def recieveSpotsToDraw(self, ):
     def recieveSpotsToDraw(self, spatial_path):
         f = pandas.read_csv(spatial_path)  
         spots = [{"barcode":barcode,
                   "pxl_row":pxl_row_in_fullres,
                   "pxl_col":pxl_col_in_fullres} for [barcode,_,_,_,pxl_row_in_fullres,pxl_col_in_fullres] in f.to_numpy()]
         print("Recieved:\t", len(spots), type(spots))
+
+        self.clear()
+        self.update()
+
         # TODO Scalling by scalfactors.json
         regist_target_img_scalef = 0.16836435
         tissue_hires_scalef = 0.056121446
@@ -381,6 +387,7 @@ class GenExpression(QGraphicsObject):
         self.add_shapes(shapes)
         self.shapes = shapes
         self.spots = spots
+        self.sRequestWSIZoomData.emit()
     def recieveGenesBarcodeMatrix(self, matrix_path:str):
         expression_content = h5py.File(matrix_path, 'r')
         hd5f_keys = np.array(expression_content["matrix"])
@@ -481,3 +488,30 @@ class GenExpression(QGraphicsObject):
                 shape.drawingDone.connect(self.set_drawing_to_false)
                 #shape.sChange.connect(self.sChange.emit)
                 self.update()
+    def remove_shapes(self, shapes: Union[Shape, List[Shape]]):
+        """
+        Remove shapes from the group and scene if connected to one.
+        :param shapes: a shape or list of shapes
+        :return: None
+        """
+        if shapes is None:
+            return
+        if isinstance(shapes, Shape):
+            shapes = [shapes]
+        for shape_id in self.expressions:
+            shape = self.expressions[shape_id]
+            if shape in shapes:
+                shape.setParentItem(None)
+                shape.deleteLater()
+                del shape
+        self.update()
+    def update_shape_positions(self, offset_x, offset_y, pixmap_x, pixmap_y, downsample):
+
+        for shape_id in self.expressions.keys():
+                new_points = []
+                for point in self.expressions[shape_id]._anchorPoint:
+                    scene_x = pixmap_x + (point.x() - offset_x) / downsample
+                    scene_y = pixmap_y + (point.y() - offset_y) / downsample
+                    new_points.append(QPointF(scene_x, scene_y))
+                self.expressions[shape_id].vertices.vertices = QPolygonF(new_points)
+                #self.expressions[shape_id].update() # UPDATE THROWS ERROR: RuntimeError: libshiboken: Internal C++ object (Shape) already deleted.

@@ -99,7 +99,21 @@ class CenterDisplayWidget(QWidget):
         self.sZoomChanged.connect(self.top_ruler.set_zoom)
         self.sZoomChanged.connect(self.left_ruler.set_zoom)
 
-        self.slide_viewer.sViewChanged.connect(self.annotations.update_shape_positions)
+        def update_wsi_positions(self):
+            def run(*args, **kwargs):
+                self.annotations.update_shape_positions(*args, **kwargs)
+                self.gen_expressions.update_shape_positions(*args, **kwargs)
+            return run
+        self.slide_viewer.sViewChanged.connect(update_wsi_positions(self))
+
+        self.gen_expressions.sRequestWSIZoomData.connect(self.updateWSIZoomGenExpressionScaling)
+    def updateWSIZoomGenExpressionScaling(self):
+        try:
+            file_type = modality(self.current_slide)
+            if file_type == Modality.slide:
+                self.slide_viewer.emit_view_params()
+        except Exception:
+            pass
     
     def on_enter_pressed(self):
             if self.annotations.pending_shapes:          
