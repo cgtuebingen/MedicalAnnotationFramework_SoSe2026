@@ -63,6 +63,7 @@ class Shape(QGraphicsObject):
         if label_dict:
             if 'label' in label_dict:
                 self.label = label_dict['label']
+                self.setToolTip(self.label or "")
             if 'points' in label_dict:
                 _points = [QPointF(_pt[0], _pt[1]) for _pt in label_dict['points']]
             if 'shape_type' in label_dict:
@@ -79,6 +80,7 @@ class Shape(QGraphicsObject):
             self.flags = flags
             self.group_id = group_id
             self.comment = ""
+            self.setToolTip(self.label or "")
 
         self._path = None  # only necessary for the temporary Polygon and trace
         self._anchorPoint = None
