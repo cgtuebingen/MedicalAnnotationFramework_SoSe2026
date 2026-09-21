@@ -39,8 +39,8 @@ and allows for creating annotation projects where you can:
 <img alt="Demo 5" src="taplt/macros/examples/demo/Demo5.png" title="Demo 5" width="650"/>
 <img alt="Demo 6" src="taplt/macros/examples/demo/Demo6.png" title="Demo 6" width="650"/>
 <img alt="Demo 7" src="taplt/macros/examples/demo/Demo7.png" title="Demo 7" width="650"/>
-<img width="639" alt="Example Preview 1" src="taplt\macros\examples\demo\Example Preview 1-reduced.jpg" />
-<img width="638" alt="Example Preview 2" src="taplt\macros\examples\demo\Example Preview 2-reduced.jpg" />
+<img width="639" alt="Example Preview 1" src="taplt/macros/examples/demo/Example Preview 1-reduced.jpg" />
+<img width="638" alt="Example Preview 2" src="taplt/macros/examples/demo/Example Preview 2-reduced.jpg" />
 
 
 
@@ -85,7 +85,7 @@ Installation with conda see [here](#installation-with-conda). This installation 
 
 This repository includes a submodule. Therefore, it can be either cloned using:
 
-Linux:
+### Linux:
 ```bash
 git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework_SoSe2026.git
 cd MedicalAnnotationFramework_SoSe2026
@@ -95,7 +95,22 @@ source venv/bin/activate
 pip install .  # add -e to use the cloned repository as the source for the package
 python download_openslide.py
 ```
-Windows:
+### Linux Troubleshooting (Qt / xcb)
+If the application fails to start on Linux with an error related to the Qt xcb platform plugin, such as:
+```bash
+qt.qpa.plugin: From 6.5.0, xcb-cursor0 or libxcb-cursor0 is needed to load the Qt xcb platform plugin.
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.
+This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+```
+this indicates that required system libraries for the Qt X11 backend are missing.
+
+Install the missing dependencies with:
+```bash
+sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev \
+    libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
+```
+
+### Windows:
 ```bash
 git clone --recurse-submodules git@github.com:cgtuebingen/MedicalAnnotationFramework_SoSe2026.git
 cd MedicalAnnotationFramework_SoSe2026
@@ -107,12 +122,12 @@ python download_openslide.py
 ```
 Further information about submodules can be found [here](https://gist.github.com/gitaarik/8735255).
 
-Launch the app with:
+### Launch the app with:
 ```bash
 python -m taplt
 ```
 
-Build the executable with:
+### Build the executable with:
 ```bash
 pyinstaller taplt.spec  # creates and puts the executable in ./dist
 ```
