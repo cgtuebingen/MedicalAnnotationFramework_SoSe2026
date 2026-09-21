@@ -250,6 +250,34 @@ class SlideView(QGraphicsView):
             self.level_crossing = True
             self.update_pixmap()
 
+    def _clamp_mouse_pos(self):
+        """limits mouse position to size of OpenSlide image"""
+        if not self.slide:
+            return
+
+        slide_w, slide_h = self.slide.dimensions
+
+        visible_w = self.width * self.cur_downsample
+        visible_h = self.height * self.cur_downsample
+
+        # center
+        if visible_w >= slide_w:
+            max_x = min_x = (slide_w - visible_w) / 2
+        else:
+            min_x = 0
+            max_x = slide_w - visible_w
+
+        if visible_h >= slide_h:
+            max_y = min_y = (slide_h - visible_h) / 2
+        else:
+            min_y = 0
+            max_y = slide_h - visible_h
+
+        clamped_x = max(min_x, min(self.mouse_pos.x(), max_x))
+        clamped_y = max(min_y, min(self.mouse_pos.y(), max_y))
+
+        self.mouse_pos = QPointF(clamped_x, clamped_y)
+
     @Slot(QWheelEvent)
     def wheelEvent(self, event: QWheelEvent):
         """
@@ -278,6 +306,8 @@ class SlideView(QGraphicsView):
         self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
         
         self.mouse_pos += event.position() * self.cur_downsample  * (1/scale_factor - 1)
+
+        self._clamp_mouse_pos()
 
         if self.level_crossing:
             self.anchor_point = self.mouse_pos.toPoint()
@@ -337,6 +367,8 @@ class SlideView(QGraphicsView):
             move = QPointF(move.x() * self.cur_downsample,
                            move.y() * self.cur_downsample)
             self.mouse_pos += move
+
+            self._clamp_mouse_pos()
             self.update_pixmap()
             self.emit_view_params()
         super().mouseMoveEvent(event)

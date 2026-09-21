@@ -80,6 +80,7 @@ class ImageViewer(QGraphicsView):
                 self._base_scale = float(self.transform().m11())
                 self._emit_zoom()
                 self._min_scale = self.transform().m11()
+                self._clamp_pan()
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         bounds = self.scene().itemsBoundingRect()
