@@ -119,6 +119,7 @@ class SlideView(QGraphicsView):
                                                         self.slide.level_dimensions[0][1] / self.height)
         self.cur_level = self.slide.get_best_level_for_downsample(self.max_downsample)
         self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
+        self._clamp_mouse_pos()
 
         self.pixmap_item.setPos(-self.width / self.cur_level_zoom, -self.height / self.cur_level_zoom)
         self.pixmap_item.setScale(1 / self.cur_level_zoom)
@@ -248,7 +249,36 @@ class SlideView(QGraphicsView):
         """
         if self.slide:
             self.level_crossing = True
+            self._clamp_mouse_pos()
             self.update_pixmap()
+
+    def _clamp_mouse_pos(self):
+        """limits mouse position to size of OpenSlide image"""
+        if not self.slide:
+            return
+
+        slide_w, slide_h = self.slide.dimensions
+
+        visible_w = self.width * self.cur_downsample
+        visible_h = self.height * self.cur_downsample
+
+        # center
+        if visible_w >= slide_w:
+            max_x = min_x = (slide_w - visible_w) / 2
+        else:
+            min_x = 0
+            max_x = slide_w - visible_w
+
+        if visible_h >= slide_h:
+            max_y = min_y = (slide_h - visible_h) / 2
+        else:
+            min_y = 0
+            max_y = slide_h - visible_h
+
+        clamped_x = max(min_x, min(self.mouse_pos.x(), max_x))
+        clamped_y = max(min_y, min(self.mouse_pos.y(), max_y))
+
+        self.mouse_pos = QPointF(clamped_x, clamped_y)
 
     @Slot(QWheelEvent)
     def wheelEvent(self, event: QWheelEvent):
@@ -277,18 +307,25 @@ class SlideView(QGraphicsView):
 
         self.cur_level_zoom = self.cur_downsample / self.level_downsamples[self.cur_level]
         
-        self.mouse_pos += event.position() * self.cur_downsample  * (1/scale_factor - 1)
+        old_mouse_pos = QPointF(self.mouse_pos)
+        mouse_pos_delta = event.position() * self.cur_downsample * (1 / scale_factor - 1)
+        self.mouse_pos += mouse_pos_delta
+
+        self._clamp_mouse_pos()
+        clamp_correction = self.mouse_pos - (old_mouse_pos + mouse_pos_delta)
+        clamp_correction_scene = clamp_correction / self.cur_downsample
 
         if self.level_crossing:
             self.anchor_point = self.mouse_pos.toPoint()
             tmp_pos = self.pixmap_item.pos()
             pix_move = QPointF(-tmp_pos.x()-self.width / self.cur_level_zoom, -tmp_pos.y()-self.height / self.cur_level_zoom)
-            self.pixmap_compensation += pix_move
+            self.pixmap_compensation += pix_move - clamp_correction_scene
             self.zoom_finished = False
         else:
             self.pixmap_item.setScale(1 / self.cur_level_zoom)
             pix_move = (- self.pixmap_item.pos() + event.position())  * (1/ scale_factor - 1)
             self.pixmap_item.moveBy(-pix_move.x(), -pix_move.y())
+            self.pixmap_item.moveBy(-clamp_correction_scene.x(), -clamp_correction_scene.y())
             self.emit_view_params()
 
         self.update_pixmap()
@@ -331,12 +368,17 @@ class SlideView(QGraphicsView):
         if self.panning and not self.annotationMode:
             new_pos = self.mapToScene(event.pos())
             move = self.pan_start - new_pos
-            self.pixmap_item.moveBy(-move.x(), -move.y())
             self.pan_start = new_pos
 
-            move = QPointF(move.x() * self.cur_downsample,
-                           move.y() * self.cur_downsample)
-            self.mouse_pos += move
+            move_l0 = QPointF(move.x() * self.cur_downsample,
+                              move.y() * self.cur_downsample)
+            old_mouse_pos = QPointF(self.mouse_pos)
+            self.mouse_pos += move_l0
+
+            self._clamp_mouse_pos()
+            effective_move_l0 = self.mouse_pos - old_mouse_pos
+            effective_move_scene = effective_move_l0 / self.cur_downsample
+            self.pixmap_item.moveBy(-effective_move_scene.x(), -effective_move_scene.y())
             self.update_pixmap()
             self.emit_view_params()
         super().mouseMoveEvent(event)

@@ -31,6 +31,41 @@ class ImageViewer(QGraphicsView):
     def set_zoom_speed(self, factor: float):
         self._scaling_factor = max(factor, 1.01)
 
+    def _clamp_pan(self) -> None:
+        """clamps panning so image cannot move outside frame"""
+        if self.b_isEmpty or not self.scene():
+            return
+
+        scene_rect = self.sceneRect()
+        if scene_rect.isEmpty():
+            return
+
+        visible_rect = self.mapToScene(self.viewport().rect()).boundingRect()
+
+        x = visible_rect.center().x()
+        y = visible_rect.center().y()
+
+        # x-axis
+        if visible_rect.width() >= scene_rect.width():
+            x = scene_rect.center().x()  # Zentrieren, wenn kleiner als Viewport
+        else:
+            half_w = visible_rect.width() / 2.0
+            x = max(
+                scene_rect.left() + half_w, min(x, scene_rect.right() - half_w)
+            )
+
+        # y-axis
+        if visible_rect.height() >= scene_rect.height():
+            y = scene_rect.center().y()  # Zentrieren, wenn kleiner als Viewport
+        else:
+            half_h = visible_rect.height() / 2.0
+            y = max(
+                scene_rect.top() + half_h, min(y, scene_rect.bottom() - half_h)
+            )
+
+        self.centerOn(x, y)
+
+
     def fitInView(self, rect: QRectF, mode: Qt.AspectRatioMode = Qt.AspectRatioMode.IgnoreAspectRatio) -> None:
         if not rect.isNull():
             self.setSceneRect(rect)
@@ -45,10 +80,17 @@ class ImageViewer(QGraphicsView):
                 self._base_scale = float(self.transform().m11())
                 self._emit_zoom()
                 self._min_scale = self.transform().m11()
+                self._clamp_pan()
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         bounds = self.scene().itemsBoundingRect()
         self.fitInView(bounds, Qt.AspectRatioMode.KeepAspectRatio)
+
+    
+    def mouseMoveEvent(self, event) -> None:
+        super().mouseMoveEvent(event)
+        if self._enablePan:
+            self._clamp_pan()
 
     def wheelEvent(self, event):
         """Responsible for Zoom.Redefines base function"""
@@ -62,6 +104,7 @@ class ImageViewer(QGraphicsView):
             elif current_scale > self._max_scale:
                 correction = self._max_scale / current_scale
                 self.scale(correction, correction)
+            self._clamp_pan()
             self._emit_zoom()
 
     def keyPressEvent(self, event) -> None:
