@@ -296,6 +296,8 @@ class GenExpression(QGraphicsObject):
         self.expressions = {}  # type: Dict[int, Shape]
         self.setAcceptHoverEvents(False)
         self.setVisible(False)
+        self.wsi_resolution = "high resolution PNG"
+
     def paint(self, *args):
             pass
 
@@ -326,6 +328,11 @@ class GenExpression(QGraphicsObject):
                 scene_event.setButtons(event.buttons())
                 scene_event.setModifiers(event.modifiers())
                 scene_event.setAccepted(False)
+
+    @Slot(str)
+    def setWsiResolution(self, resolution: str):
+        self.wsi_resolution = resolution
+
     @Slot()
     def create_shape(self, event = None):
         if not self.drawing:
@@ -355,6 +362,7 @@ class GenExpression(QGraphicsObject):
         :return:
         """
         self.remove_shapes(list(self.expressions.values()))
+
     @Slot()
     def recieveSpotsToDraw(self, spatial_path):
         f = pandas.read_csv(spatial_path)  
@@ -372,23 +380,25 @@ class GenExpression(QGraphicsObject):
         tissue_lowres_scalef = 0.016836435
         fiducial_diameter_fullres = 384.18505640709947
         spot_diameter_fullres = 256.12337093806633
-        radius:float = (spots[1].get("pxl_col") - spots[0].get("pxl_col")) * tissue_hires_scalef /3.0
-        shapes:List[Shape] = []
+        scalef = tissue_lowres_scalef if self.wsi_resolution == "low resolution PNG" else tissue_hires_scalef
+        radius: float = (spots[1].get("pxl_col") - spots[0].get("pxl_col")) * scalef / 3.0
+        shapes: List[Shape] = []
         s = self.scene()
-        
-        for spot in spots:
-            x = int(spot.get("pxl_col") * tissue_hires_scalef)
-            y = int(spot.get("pxl_row") * tissue_hires_scalef)
 
-            point = [QPointF(x,y), QPointF(x+radius,y)]
+        for spot in spots:
+            x = int(spot.get("pxl_col") * scalef)
+            y = int(spot.get("pxl_row") * scalef)
+
+            point = [QPointF(x, y), QPointF(x + radius, y)]
             shapes.append(Shape(image_size=QSize(int(s.width()), int(s.height())),
-                                                        mode=Shape.ShapeMode.FIXED, # type: ignore
-                                                        color=self.draw_new_color, 
-                                                        points=point))
+                                mode=Shape.ShapeMode.FIXED,  # type: ignore
+                                color=self.draw_new_color,
+                                points=point))
         self.add_shapes(shapes)
         self.shapes = shapes
         self.spots = spots
         self.sRequestWSIZoomData.emit()
+
     def recieveGenesBarcodeMatrix(self, matrix_path:str):
         expression_content = h5py.File(matrix_path, 'r')
         hd5f_keys = np.array(expression_content["matrix"])
