@@ -405,6 +405,9 @@ class SettingList(QListWidget):
         self.setStyleSheet(SETTING_STYLESHEET)
         for setting in settings:
             name, value, hint = setting
+            if value in ["True", "true", "1"]: value = True
+            elif value in ["False", "false", "0"]: value = False
+            else: return
             if isinstance(value, bool):
                 item = QListWidgetItem(name)
                 checked = Qt.CheckState.Checked if value else Qt.CheckState.Unchecked
