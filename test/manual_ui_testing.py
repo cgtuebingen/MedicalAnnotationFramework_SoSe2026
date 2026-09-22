@@ -14,7 +14,7 @@ from taplt.ui.menu_bar import MenuBar
 from taplt.ui.ruler import RulerWidget, create_physical_context
 from taplt.src.main_logic import MainLogic
 from taplt.utils.qt import colormap_rgb
-from taplt.utils.stylesheets import get_tab_stylesheet, BASE_FONT_SIZE
+from taplt.utils.stylesheets import get_tab_stylesheet, BASE_FONT_SIZE, sync_theme_with_system
 from taplt.ui.welcome_screen import WelcomeScreen
 
 COLORS, _ = colormap_rgb(25)
@@ -168,7 +168,6 @@ def test_toolbar():
     window.resize(600, 700)
 
     center = QWidget()
-    center.setStyleSheet("background-color: white;")
     window.setCentralWidget(center)
 
     action_source = LabelingMainWindow()
@@ -194,7 +193,6 @@ def test_ruler_display():
     layout.setSpacing(0)
 
     corner = QLabel()
-    corner.setStyleSheet("background-color: white;")
     horizontal = RulerWidget(RulerWidget.HORIZONTAL)
     vertical = RulerWidget(RulerWidget.VERTICAL)
     horizontal.set_measurement_context(create_physical_context(0.5))
@@ -284,6 +282,7 @@ def test_welcome_screen():
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    sync_theme_with_system()
 
     # test_dialog_delete_shape()
     # test_dialog_forgot_to_save()
