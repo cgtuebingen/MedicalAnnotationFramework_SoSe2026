@@ -29,11 +29,13 @@ def test_all():
     app.exec()
 
 
+'''
 def test_comment_list():
     # done
     comment_list = CommentList()
     comment_list.show()
     app.exec()
+'''
 
 
 def test_dialog_close():
@@ -290,7 +292,6 @@ if __name__ == "__main__":
     # test_dialog_select_patient()
     # test_dialog_project_handler()
     # test_dialog_comment()
-    #test_comment_list()
     # test_label_viewing_widget()
     # test_all()
     # test_tab()
