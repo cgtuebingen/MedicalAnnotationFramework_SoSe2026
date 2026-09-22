@@ -18,6 +18,8 @@ import pandas
 import h5py
 import json
 
+import shiboken6 as shiboken
+
 from taplt.config import SCALING_INITIAL
 
 from taplt.utils.qt import closest_euclidean_distance
@@ -90,6 +92,8 @@ class Shape(QGraphicsObject):
         self._isClosedPath = False
         self.scene_size: Tuple[float, float] = (1e7, 1e7)
         self.set_mode(mode)
+
+        self.parentItem = QGraphicsWidget()
 
     def set_mode(self, mode: Union[ShapeMode, int]):
         self.mode = mode
@@ -296,6 +300,8 @@ class GenExpression(QGraphicsObject):
         self.drawing = False
         self.expressions = {}  # type: Dict[int, Shape]
         self.setAcceptHoverEvents(False)
+
+        self.GraphicLayer = QGraphicsWidget(self)
     def paint(self, *args):
             pass
 
@@ -354,7 +360,11 @@ class GenExpression(QGraphicsObject):
         Note: It takes some time for many objects
         :return:
         """
-        self.remove_shapes(list(self.expressions.values()))
+        self.GraphicLayer.setParent(None)
+        shiboken.delete(self.GraphicLayer)
+        self.GraphicLayer = QGraphicsWidget(self)
+        #self.remove_shapes(list(self.expressions.values()))
+        self.expressions = {}
     @Slot()
     def recieveSpotsToDraw(self, spatial_path, scaling_path):
         f = pandas.read_csv(spatial_path)
@@ -504,7 +514,7 @@ class GenExpression(QGraphicsObject):
             if isinstance(new_shapes, Shape):
                 new_shapes = [new_shapes]
             for shape in new_shapes:
-                shape.setParentItem(self)
+                shape.setParentItem(self.GraphicLayer)
                 new_id = 0 if not self.expressions else max(self.expressions.keys()) + 1
                 self.expressions[new_id] = shape
                 #shape.selected.connect(self.shape_selected)
@@ -520,16 +530,35 @@ class GenExpression(QGraphicsObject):
         :param shapes: a shape or list of shapes
         :return: None
         """
-        if shapes is None:
-            return
         if isinstance(shapes, Shape):
-            shapes = [shapes]
-        for shape_id in self.expressions:
-            shape = self.expressions[shape_id]
-            if shape in shapes:
-                shape.setParentItem(None)
-                shape.deleteLater()
-                del shape
+            shapes_to_remove = [shapes]
+        else:
+            shapes_to_remove = shapes
+        #for shape_id in self.expressions:
+        #    shape = self.expressions[shape_id]
+        #    if shape in shapes:
+        #        shape.setParentItem(None)
+        #        shape.deleteLater()
+        #        del shape
+
+
+        # Track keys to delete so we don't mutate the dict while iterating
+        keys_to_delete = []
+
+        for shape_id, shape in self.expressions.items():
+            if shape in shapes_to_remove:
+                # 1. Safely unparent only if the C++ object still exists
+                if shiboken.isValid(shape):
+                    shape.setParentItem(None)
+                    shiboken.delete(shape)
+
+                # 2. Mark the dictionary key for removal
+                keys_to_delete.append(shape_id)
+
+        # 3. Clean up the dictionary so no "dead" wrappers remain
+        for shape_id in keys_to_delete:
+            del self.expressions[shape_id]
+
         self.update()
     def update_shape_positions(self, offset_x, offset_y, pixmap_x, pixmap_y, downsample):
 
