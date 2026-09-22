@@ -9,9 +9,12 @@ from taplt.ui.file_display import CenterDisplayWidget
 from taplt.ui.annotation_tree import AnnotationTree
 from taplt.ui.shape import Shape
 from taplt.ui.toolbar import Toolbar
+from taplt.ui.collapsible_box import CollapsibleBox
+from taplt.ui.menu_bar import MenuBar
+from taplt.ui.ruler import RulerWidget, create_physical_context
 from taplt.src.main_logic import MainLogic
 from taplt.utils.qt import colormap_rgb
-from taplt.utils.stylesheets import get_tab_stylesheet, BASE_FONT_SIZE
+from taplt.utils.stylesheets import get_tab_stylesheet, BASE_FONT_SIZE, sync_theme_with_system
 from taplt.ui.welcome_screen import WelcomeScreen
 
 COLORS, _ = colormap_rgb(25)
@@ -26,11 +29,13 @@ def test_all():
     app.exec()
 
 
+'''
 def test_comment_list():
     # done
     comment_list = CommentList()
     comment_list.show()
     app.exec()
+'''
 
 
 def test_dialog_close():
@@ -48,16 +53,15 @@ def test_dialog_comment():
 
 
 def test_dialog_delete_class():
-    # done
     dlg = DeleteClassMessageBox("Gesundes Gewebe")
     dlg.exec()
-    print(dlg.answer)
+    print(dlg.result())
 
 
 def test_dialog_delete_shape():
-    # done
     dlg = DeleteShapeMessageBox("tumour")
-    print(dlg.answer)
+    dlg.exec()
+    print(dlg.result())
 
 
 def test_dialog_forgot_to_save():
@@ -106,9 +110,9 @@ def test_file_viewing_widget():
 
 
 def test_image_display():
+    # done
     window = CenterDisplayWidget()
-    pm = QPixmap("../examples/images/elephant.png")
-    window.init_image(pm, None)
+    window.init_image("taplt/macros/examples/images/elephant.png", "Test patient", [], CLASSES)
     window.show()
     app.exec()
 
@@ -130,6 +134,7 @@ def test_label_viewing_widget():
 
 
 def test_main_window():
+    # done
     window = LabelingMainWindow()
     window.show()
     app.exec_()
@@ -159,12 +164,12 @@ def test_tab():
 
 
 def test_toolbar():
+    # done
     window = QMainWindow()
     window.setWindowTitle("Toolbar manual test")
     window.resize(600, 700)
 
     center = QWidget()
-    center.setStyleSheet("background-color: white;")
     window.setCentralWidget(center)
 
     action_source = LabelingMainWindow()
@@ -179,8 +184,98 @@ def test_toolbar():
     toolbar.raise_()
     app.exec()
 
-def test_welcome_screen():
 
+def test_ruler_display():
+    # done
+    window = QMainWindow()
+    window.resize(900, 500)
+
+    central = QWidget()
+    layout = QGridLayout(central)
+    layout.setSpacing(0)
+
+    corner = QLabel()
+    horizontal = RulerWidget(RulerWidget.HORIZONTAL)
+    vertical = RulerWidget(RulerWidget.VERTICAL)
+    horizontal.set_measurement_context(create_physical_context(0.5))
+    vertical.set_measurement_context(create_physical_context(0.5))
+
+    zoom_value = 100
+    zoom_label = QPushButton("100%")
+    zoom_label.setEnabled(False)
+    zoom_out = QPushButton("-")
+    zoom_in = QPushButton("+")
+
+    def update_zoom(zoom):
+        horizontal.set_zoom(zoom)
+        vertical.set_zoom(zoom)
+        zoom_label.setText(f"{round(zoom * 100)}%")
+
+    def change_zoom(step):
+        nonlocal zoom_value
+        zoom_value = max(50, min(300, zoom_value + step))
+        update_zoom(zoom_value / 100)
+
+    zoom_out.clicked.connect(lambda: change_zoom(-25))
+    zoom_in.clicked.connect(lambda: change_zoom(25))
+
+    controls = QHBoxLayout()
+    controls.addWidget(zoom_out)
+    controls.addWidget(zoom_label)
+    controls.addWidget(zoom_in)
+
+    layout.addWidget(corner, 0, 0)
+    layout.addWidget(horizontal, 0, 1)
+    layout.addWidget(vertical, 1, 0)
+    layout.addLayout(controls, 2, 0, 1, 2, Qt.AlignmentFlag.AlignLeft)
+    window.setCentralWidget(central)
+    window.show()
+    app.exec()
+
+
+def test_side_panels():
+    window = QMainWindow()
+    window.setWindowTitle("Side panels manual test")
+    window.resize(420, 800)
+
+    panel = QWidget()
+    panel.setLayout(QVBoxLayout())
+    panel.layout().setContentsMargins(0, 0, 0, 0)
+
+    labels = LabelsViewingWidget()
+    labels.label_list.update_with_classes(CLASSES, COLORS)
+    polygons = AnnotationTree()
+    polygons.update_polygons(SHAPES)
+    files = FileViewingWidget()
+
+    for title, content in (("Labels", labels), ("Polygons", polygons), ("File List", files)):
+        section = CollapsibleBox(title)
+        section.setContentWidget(content)
+        panel.layout().addWidget(section)
+
+    window.setCentralWidget(panel)
+    window.show()
+    app.exec()
+
+
+def test_menu_bar():
+    # done
+    window = QMainWindow()
+    window.setWindowTitle("Menu bar manual test")
+    window.resize(900, 500)
+    window.setCentralWidget(QLabel("Use the menus and the undo/redo buttons."))
+
+    menu_bar = MenuBar(window)
+    menu_bar.enable_tools()
+    menu_bar.sUndo.connect(lambda: print("Undo clicked"))
+    menu_bar.sRedo.connect(lambda: print("Redo clicked"))
+    window.setMenuBar(menu_bar)
+    window.show()
+    app.exec()
+
+
+def test_welcome_screen():
+    # done 
     screen = WelcomeScreen()
     screen.sNewProject.connect(lambda: print("New Project clicked"))
     screen.sOpenProject.connect(lambda: print("Open Project clicked"))
@@ -189,6 +284,7 @@ def test_welcome_screen():
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    sync_theme_with_system()
 
     # test_dialog_delete_shape()
     # test_dialog_forgot_to_save()
@@ -196,7 +292,6 @@ if __name__ == "__main__":
     # test_dialog_select_patient()
     # test_dialog_project_handler()
     # test_dialog_comment()
-    # test_comment_list()
     # test_label_viewing_widget()
     # test_all()
     # test_tab()
@@ -206,7 +301,10 @@ if __name__ == "__main__":
     # test_file_viewing_widget()
     # test_tree_widget()
     # test_dialog_new_label()
-    # test_image_display()
-    test_toolbar()
+    test_image_display()
+    # test_toolbar()
     # test_main_window()
+    # test_ruler_display()
+    # test_side_panels()
+    # test_menu_bar()
     # test_welcome_screen()
