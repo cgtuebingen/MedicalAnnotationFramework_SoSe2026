@@ -115,14 +115,6 @@ def test_image_display():
     app.exec()
 
 
-def test_wsi_display():
-    # done
-    window = CenterDisplayWidget()
-    window.init_image("taplt/macros/examples/slides/test_001.tif", "Test patient", [], CLASSES)
-    window.show()
-    app.exec()
-
-
 def test_label_list():
     # done
     label_list = LabelList()
@@ -309,8 +301,7 @@ if __name__ == "__main__":
     # test_file_viewing_widget()
     # test_tree_widget()
     # test_dialog_new_label()
-    # test_image_display()
-    test_wsi_display()
+    test_image_display()
     # test_toolbar()
     # test_main_window()
     # test_ruler_display()
