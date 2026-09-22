@@ -34,6 +34,7 @@ class CenterDisplayWidget(QWidget):
         # main components of the display
         self.scene = QGraphicsScene()
         self.image_viewer = ImageViewer(self.scene)
+        self.current_slide = None
 
         self.video_player = VideoPlayer(self.scene)
         self.video_label = QLabel()
