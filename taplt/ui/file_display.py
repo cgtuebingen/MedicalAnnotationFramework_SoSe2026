@@ -32,6 +32,7 @@ class CenterDisplayWidget(QWidget):
         super(CenterDisplayWidget, self).__init__(*args)
 
         self.parent_window = None
+        self.current_slide = None
 
 
         # main components of the display
