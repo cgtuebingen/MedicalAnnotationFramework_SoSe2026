@@ -426,11 +426,13 @@ class GenExpression(QGraphicsObject):
         self.shapes = shapes
         self.spots = spots
         self.sRequestWSIZoomData.emit()
-    def recieveGenesBarcodeMatrix(self, matrix_path:str):
+    def readMatrix(self, matrix_path:str):
         expression_content = h5py.File(matrix_path, 'r')
         hd5f_keys = np.array(expression_content["matrix"])
         matrix  = expression_content["matrix"]
-        self.matrix = matrix
+        return matrix
+    def removeUnusedSpots(self, matrix):
+        """Checks for spots that do not occur in the matrix and removes them"""
         def decoder(a:bytes):
             return a.decode("utf-8")
         self.used_barcodes = np.array(list(map(decoder, matrix["barcodes"])))
@@ -445,6 +447,11 @@ class GenExpression(QGraphicsObject):
                 self.shapes.pop(i)
                 spots_barcodes.pop(i)
         self.update()
+        return spots_barcodes
+    def recieveGenesBarcodeMatrix(self, matrix_path:str):
+        self.matrix = self.readMatrix(matrix_path)
+        spots_barcodes = self.removeUnusedSpots(self.matrix)
+        
         reordered_shapes = []
         reordered_spots = []
         spots_barcodes = np.array(spots_barcodes)
@@ -536,28 +543,19 @@ class GenExpression(QGraphicsObject):
             shapes_to_remove = [shapes]
         else:
             shapes_to_remove = shapes
-        #for shape_id in self.expressions:
-        #    shape = self.expressions[shape_id]
-        #    if shape in shapes:
-        #        shape.setParentItem(None)
-        #        shape.deleteLater()
-        #        del shape
 
-
-        # Track keys to delete so we don't mutate the dict while iterating
+        # Track keys to delete so we don't mutate it while iterating
         keys_to_delete = []
 
         for shape_id, shape in self.expressions.items():
             if shape in shapes_to_remove:
-                # 1. Safely unparent only if the C++ object still exists
-                if shiboken.isValid(shape):
+                # Safely delete only if the C++ object still exists
+                if shiboken.isValid(shape): 
                     shape.setParentItem(None)
                     shiboken.delete(shape)
 
-                # 2. Mark the dictionary key for removal
                 keys_to_delete.append(shape_id)
-
-        # 3. Clean up the dictionary so no "dead" wrappers remain
+        # Clean up the dictionary
         for shape_id in keys_to_delete:
             del self.expressions[shape_id]
 
