@@ -182,7 +182,8 @@ class Shape(QGraphicsObject):
     def init_color(self, color: QColor):
         if color:
             self.line_color, self.brush_color = color, deepcopy(color)
-            self.brush_color.setAlphaF(0.5)
+            if self.brush_color.alphaF() >= 0.5:
+                self.brush_color.setAlphaF(0.5)
 
     def init_path(self):
         self._path = QPainterPath()
@@ -453,10 +454,11 @@ class GenExpression(QGraphicsObject):
             reordered_spots.append(spots_barcodes[shape_index])
         self.shapes = reordered_shapes
 
-        result =  self.read_col(2326, matrix)
         self.update()
+        self.changeGene(2326)
+    def changeGene(self, gen_index):
+        result =  self.read_col(gen_index, self.matrix)
         self.setColor(result)
-
     def setColor(self, gen_occurence:list[int]):
         max_amount = max(gen_occurence)
         brusher = self.colorRange(max_amount)
