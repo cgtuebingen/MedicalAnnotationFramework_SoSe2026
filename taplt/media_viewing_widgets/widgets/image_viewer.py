@@ -86,10 +86,25 @@ class ImageViewer(QGraphicsView):
         bounds = self.scene().itemsBoundingRect()
         self.fitInView(bounds, Qt.AspectRatioMode.KeepAspectRatio)
 
+    def mousePressEvent(self, event):
+        """enables panning when left mouse button is pressed"""
+        if event.button() == Qt.LeftButton and not self.b_isEmpty:
+            self._enablePan = True
+            self._panStart = self.mapToScene(event.pos())
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
+
+        super().mousePressEvent(event)
+
     
     def mouseMoveEvent(self, event) -> None:
+        """panning"""
         super().mouseMoveEvent(event)
-        if self._enablePan:
+        if self._enablePan and self._panStart is not None:
+            new_pos = self.mapToScene(event.pos())
+            delta = new_pos - self._panStart
+            self._panStart = new_pos
+            self.translate(delta.x(), delta.y())
+
             self._clamp_pan()
 
     def wheelEvent(self, event):
@@ -109,10 +124,8 @@ class ImageViewer(QGraphicsView):
 
     def keyPressEvent(self, event) -> None:
         if not self.b_isEmpty:
-            if event.key() == Qt.Key.Key_Control:
-                self._enablePan = True
-                self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-            elif event.key() == Qt.Key.Key_Left:
+
+            if event.key() == Qt.Key.Key_Left:
                 self.sNextFile.emit(-1)
             elif event.key() == Qt.Key.Key_Right:
                 self.sNextFile.emit(1)
@@ -121,11 +134,12 @@ class ImageViewer(QGraphicsView):
             elif event.key() == Qt.Key.Key_Escape:
                 self.sEscapePressed.emit()
 
-    def keyReleaseEvent(self, event) -> None:
-        if not self.b_isEmpty:
-            if event.key() == Qt.Key.Key_Control:
-                self._enablePan = False
-                self.setDragMode(QGraphicsView.DragMode.NoDrag)
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._enablePan = False
+            self.setDragMode(QGraphicsView.NoDrag)
+
+        super().mouseReleaseEvent(event)
 
     def _emit_zoom(self):
         """emits the zoom level relative to the 'fit to view' scale"""
