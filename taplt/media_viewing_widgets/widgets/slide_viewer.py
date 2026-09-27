@@ -343,6 +343,7 @@ class SlideView(QGraphicsView):
         if event.button() == Qt.MouseButton.LeftButton and not self.annotationMode:
             self.panning = True
             self.pan_start = self.mapToScene(event.pos())
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
         super().mousePressEvent(event)
 
     @Slot(QMouseEvent)
@@ -355,6 +356,7 @@ class SlideView(QGraphicsView):
         """
         if event.button() == Qt.MouseButton.LeftButton and not self.annotationMode:
             self.panning = False
+            self.setCursor(Qt.CursorShape.ArrowCursor)
         super().mouseReleaseEvent(event)
 
     @Slot(QMouseEvent)
