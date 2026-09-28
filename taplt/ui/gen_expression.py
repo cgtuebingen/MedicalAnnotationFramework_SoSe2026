@@ -463,7 +463,7 @@ class GenExpression(QGraphicsObject):
 
         self.update()
         self.changeGene(2326)
-    def changeGene(self, gen_index):
+    def changeGene(self, gen_index:int):
         result =  self.read_col(gen_index, self.matrix)
         self.setColor(result)
     def setColor(self, gen_occurence:list[int]):

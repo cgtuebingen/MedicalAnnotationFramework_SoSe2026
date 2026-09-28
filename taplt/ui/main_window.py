@@ -196,6 +196,8 @@ class LabelingMainWindow(QMainWindow):
         self.file_display.annotations.sChange.connect(self.change_detected)
         self.file_list.sDeleteFile.connect(self.delete_file)
         self.file_list.sRequestFileChange.connect(self.file_list_item_clicked)
+        #self.gen_list.sRequestGenChange(self.file_display.gen_expressions.changeGene) # TODO Add this, when gen_list exists in list_widgets and is added to mainwindow, just like file_list
+
         self.polygons.sItemsDeleted.connect(self.file_display.annotations.remove_shapes)
         self.polygons.sDeselectAll.connect(self.file_display.annotations.deselect_all)
         self.polygons.sChange.connect(self.change_detected)
