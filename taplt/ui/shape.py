@@ -73,6 +73,11 @@ class Shape(QGraphicsObject):
                 self.group_id = label_dict['group_id']
             if 'comment' in label_dict:
                 self.comment = label_dict['comment']
+            self.coordinate_space = label_dict.get('coordinate_space', 'scene')
+            if self.coordinate_space == 'l0':
+                self.l0_points = [(pt[0], pt[1]) for pt in label_dict['points']]
+            else:
+                self.l0_points = None
         else:
             self.label = label
             self.shape_type = shape_type
@@ -106,6 +111,11 @@ class Shape(QGraphicsObject):
         if self.mode == Shape.ShapeMode.CREATE:
             self.setSelected(True)
         self.mode_changed.emit(self.mode)
+
+    def set_points(self, points):
+        self.prepareGeometryChange()
+        self.vertices.vertices = QPolygonF(points)
+        self.update()
 
     def clip_to_scene(self, scene_pos: QPointF) -> QPointF:
         rect = self.scene().itemsBoundingRect()  # type: QRect
@@ -469,12 +479,15 @@ class Shape(QGraphicsObject):
         r"""Returns a dict and a string from a shape item as those can be easier serialized
         with pickle compared to own classes"""
         # TODO: maybe json serialization? Or look into how one can pickle own classes and de-pickle them
+        points = getattr(self, 'serialization_points', self.vertices.vertices)
         dictionary = {'label': self.label,
-                      'points': [[_pt.x(), _pt.y()] for _pt in self.vertices.vertices],
+                      'points': [[_pt.x(), _pt.y()] for _pt in points],
                       'shape_type': self.shape_type,
                       'flags': self.flags,
                       'group_id': self.group_id,
                       'comment': self.comment}
+        if hasattr(self, 'serialization_points'):
+             dictionary['coordinate_space'] = self.serialization_coordinate_space
         return dictionary, self.label
 
     def update_color(self, color: QColor):

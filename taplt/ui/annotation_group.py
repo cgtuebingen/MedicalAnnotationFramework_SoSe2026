@@ -162,6 +162,8 @@ class AnnotationGroup(QGraphicsObject):
             shape.drawingDone.connect(self.set_drawing_to_false)
             shape.sChange.connect(self.sChange.emit)
             self.update()
+            if hasattr(shape, 'l0_points') and shape.l0_points:
+                self.l0_coordinates[new_id] = shape.l0_points
     
     def add_to_history(self, shape):
         self.undo_stack.append(shape)
@@ -242,7 +244,7 @@ class AnnotationGroup(QGraphicsObject):
         :return:
         """
         self.pending_shapes.clear()
-        self.current_view_params = None
+        #self.current_view_params = None
         self.remove_shapes(list(self.annotations.values()))
 
     def shape_selected(self):
@@ -320,6 +322,8 @@ class AnnotationGroup(QGraphicsObject):
         # for some reason, bugs emerge when you pass the labels as a list
         for lbl in current_labels:
             self.add_shapes(lbl)
+        if self.current_view_params is not None:
+            self.update_shape_positions(*self.current_view_params)
         self.updateShapes.emit(current_labels)
     
 
@@ -345,8 +349,7 @@ class AnnotationGroup(QGraphicsObject):
                 scene_x = pixmap_x + (l0_x - offset_x) / downsample
                 scene_y = pixmap_y + (l0_y - offset_y) / downsample
                 new_points.append(QPointF(scene_x, scene_y))
-            shape.vertices.vertices = QPolygonF(new_points)
-            shape.update()
+            shape.set_points(new_points)
     
     def scene_to_slide(self, scene_pos: QPointF) -> QPointF:
         x = self.offset_x + (scene_pos.x() - self.pixmap_x) * self.downsample
