@@ -49,6 +49,7 @@ class LabelingMainWindow(QMainWindow):
     sRequestImportInfo = Signal()
     sSendSpotsToDraw = Signal(str, str)
     sSendMatrixOfGenesAndBarcodes = Signal(str)
+    sSendCluster = Signal(str)
     sAddLabelTable = Signal(str)
 
     @dataclass
@@ -491,7 +492,7 @@ class LabelingMainWindow(QMainWindow):
         spatial_path, _ = QFileDialog.getOpenFileName(self,
                                                 caption="Select GenExpressions csv tissue positions",
                                                 dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",#str(Path.home()),
-                                                filter="Database (*.csv)",
+                                                filter="Table (*.csv)",
                                                 options=QFileDialog.Option.DontUseNativeDialog)
         if spatial_path:
             self.sSendSpotsToDraw.emit(spatial_path, scaling_path)
@@ -502,6 +503,14 @@ class LabelingMainWindow(QMainWindow):
                                                         options=QFileDialog.Option.DontUseNativeDialog)
             if expression_path:
                 self.sSendMatrixOfGenesAndBarcodes.emit(expression_path)
+
+            cluster_path, _ = QFileDialog.getOpenFileName(self,
+                                                        caption="Select Cluster CSV",
+                                                        dir=str("/".join(spatial_path.split("/")[:-2])+"/"),
+                                                        filter="Table (*.csv)",
+                                                        options=QFileDialog.Option.DontUseNativeDialog)
+            if expression_path:
+                self.sSendCluster.emit(cluster_path)
 
     def next_image(self, direction: int):
         """proceeds to the next/previous image"""

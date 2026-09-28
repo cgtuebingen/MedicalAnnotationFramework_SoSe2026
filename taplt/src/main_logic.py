@@ -29,6 +29,7 @@ class MainLogic:
         self.main_window.sRequestImportInfo.connect(self.database.send_import_info_for_drop)
         self.main_window.sSendSpotsToDraw.connect(self.main_window.file_display.gen_expressions.recieveSpotsToDraw)
         self.main_window.sSendMatrixOfGenesAndBarcodes.connect(self.main_window.file_display.gen_expressions.recieveGenesBarcodeMatrix)
+        self.main_window.sSendCluster.connect(self.main_window.file_display.gen_expressions.recieveCluster)
 
         # main window's menubar -> database
         self.main_window.menubar.sRequestImport.connect(self.database.send_import_info)

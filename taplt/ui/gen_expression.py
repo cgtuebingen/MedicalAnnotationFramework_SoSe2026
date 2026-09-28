@@ -463,6 +463,18 @@ class GenExpression(QGraphicsObject):
 
         self.update()
         self.changeGene(2326)
+    def readCluster(self, cluster_path:str) -> np.ndarray[tuple[int, int], np.dtype[np.str_| np.int8]]:
+        f = pandas.read_csv(cluster_path)
+        return f.to_numpy()
+    def recieveCluster(self, cluster_path:str):
+        self.cluster = self.readCluster(cluster_path)
+        colors = self.colorCircle(max(self.cluster[:,1]))
+        for [key, cluster] in self.cluster:
+            spot = np.where(self.used_barcodes == key)[0][0]
+            print(f"spot:\t{spot}")
+            self.shapes[spot].init_color(colors[cluster-1])
+
+
     def changeGene(self, gen_index:int):
         result =  self.read_col(gen_index, self.matrix)
         self.setColor(result)
@@ -471,7 +483,24 @@ class GenExpression(QGraphicsObject):
         brusher = self.colorRange(max_amount)
         for i in range(len(self.shapes)):
             self.shapes[i].init_color(brusher(gen_occurence[i]))
-                
+
+    def colorCircle(self, nColors:int) -> list[QColor]:
+        if nColors == 0:
+            return []
+        degree = 360/nColors
+        colors = [self.getColorbyDegree(i*degree) for i in range(nColors)]
+        return colors
+    def getColorbyDegree(self, degree):
+        degree = (degree%360)/120
+         
+        if degree < 1: # first third
+            return QColor(255*(1-degree), 255*degree, 0)
+        degree = degree - 1
+        if degree < 1: # second third
+            return QColor(0, 255*(1-degree), 255*degree)
+        # else it's the last third
+        return QColor(255*degree, 0, 255*(1-degree))
+
     def read_col(self, col:int, matrix):
         '''Given a gen, find all the spots where the gen appears and the amount'''
         barcodes = matrix["barcodes"]
