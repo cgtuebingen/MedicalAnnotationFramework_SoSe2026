@@ -169,6 +169,9 @@ class CenterDisplayWidget(QWidget):
                   for _label in labels]
 
         self.annotations.update_annotations(labels)
+        gene_expression_data = ...,...,...,...,...,...
+        scalefactor, spots, cluster, matrix, isGeneSelected, gene = gene_expression_data
+        self.gen_expressions.update_gene_expression(scalefactor, spots, cluster, matrix, isGeneSelected, gene)
         self.hide_button.raise_()
 
         self.switch_to_modality(filepath)

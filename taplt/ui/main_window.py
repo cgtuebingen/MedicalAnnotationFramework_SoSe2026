@@ -458,9 +458,11 @@ class LabelingMainWindow(QMainWindow):
     def open_project(self):
         """executes a dialog prompting the user to select a database"""
         if self.check_for_changes():
+            shortcut_path = str(Path.home())+"\\AnnotationProjects"
+            path = shortcut_path if os.path.exists(shortcut_path) else str(Path.home())
             database, _ = QFileDialog.getOpenFileName(self,
                                                       caption="Select Database",
-                                                      dir=str(Path.home()),
+                                                      dir=path,
                                                       filter="Database (*.db)",
                                                       options=QFileDialog.Option.DontUseNativeDialog)
             if database:
@@ -526,7 +528,6 @@ class LabelingMainWindow(QMainWindow):
                                                       filter="CSV (*.csv)",
                                                       options=QFileDialog.Option.DontUseNativeDialog)
         if cluster_path:
-            #self.sSendCluster.emit(cluster_path)
             self.sSendClusters.emit(cluster_path)
 
     def next_image(self, direction: int):

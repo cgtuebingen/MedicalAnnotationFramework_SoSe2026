@@ -385,11 +385,19 @@ class GenExpression(QGraphicsObject):
         shiboken.delete(self.GraphicLayer)
         self.GraphicLayer = QGraphicsWidget(self)
         #self.remove_shapes(list(self.expressions.values()))
-        self.expressions = {}
         self.shapes = []
         self.spots = []
+        self.expressions = {}
+        self.sGenesReady.emit([])
         self.cluster_by_barcode = {}
         self.sClustersReady.emit([])
+    def clearGenes(self):
+            self.expressions = {}
+            self.sGenesReady.emit([])
+            self.update()
+    def clearCluster(self):
+            self.cluster_by_barcode = {}
+            self.sClustersReady.emit([])
 
     @Slot()
     def recieveSpotsToDraw(self, spatial_path, scaling_path):
@@ -480,12 +488,10 @@ class GenExpression(QGraphicsObject):
             return
 
         self.cluster_by_barcode = mapping
-        print(["All"] + sorted(set(mapping.values()), key=int))
         self.sClustersReady.emit(["All"] + sorted(set(mapping.values()), key=int))        
     def color_by_cluster(self, cluster_id: str):
             if not self.cluster_by_barcode:
                 return
-            print("cluster_id",cluster_id)
             colors = self.colorCircle(max(self.cluster_by_barcode.values()))
             unique_clusters = sorted(set(str(v) for v in self.cluster_by_barcode.values()), key=int)
             cluster_color = {cid: colors[i % len(colors)] for i, cid in enumerate(unique_clusters)}
@@ -533,7 +539,7 @@ class GenExpression(QGraphicsObject):
             reordered_spots.append(keep_spots[idx])
         self.shapes = reordered_shapes
         self.spots = reordered_spots
-        self.gene_names = []
+        self.gene_names:list[str] = []
         for name in self.matrix["features"]["name"]:
             if isinstance(name, (bytes, bytearray)):
                 self.gene_names.append(name.decode("utf-8"))
@@ -677,3 +683,16 @@ class GenExpression(QGraphicsObject):
                 invalid_ids.append(shape_id)
         for shape_id in invalid_ids:
             self.expressions.pop(shape_id, None)
+    def update_gene_expression(self, scalefactor, spots, cluster, matrix, isGeneSelected, gene):
+        self.clear()
+    def GeneHeaderClicked(self):
+        #if not clear else ask for new
+        if self.expressions == {}:
+            pass# Ask for Matrix
+        else:
+            self.clearGenes()
+    def ClusterHeaderClicked(self):
+        if self.cluster_by_barcode == {}:
+            pass # Ask For ClusterCSV
+        else:
+            self.clearCluster()

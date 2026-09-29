@@ -40,6 +40,8 @@ class MainLogic:
         gen_overlay.sClustersReady.connect(gen_panel.set_clusters)
         gen_panel.sGeneSelected.connect(gen_overlay.changeGene)
         gen_panel.sClusterSelected.connect(gen_overlay.color_by_cluster)
+        gen_panel.sGeneHeaderClicked.connect(gen_overlay.GeneHeaderClicked)
+        gen_panel.sClusterHeaderClicked.connect(gen_overlay.ClusterHeaderClicked)
 
         # main window's menubar -> database
         self.main_window.menubar.sRequestImport.connect(self.database.send_import_info)

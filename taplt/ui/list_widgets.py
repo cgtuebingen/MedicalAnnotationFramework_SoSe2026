@@ -405,6 +405,8 @@ class GenExpressionWidget(QWidget):
     sToggled = Signal(bool)
     sGeneSelected = Signal(int)
     sClusterSelected = Signal(str)
+    sGeneHeaderClicked = Signal()
+    sClusterHeaderClicked = Signal()
 
     def __init__(self):
         super(GenExpressionWidget, self).__init__()
@@ -434,15 +436,19 @@ class GenExpressionWidget(QWidget):
         tables = QHBoxLayout()
         self.genes_table = QTableWidget(0, 1)
         self.genes_table.setHorizontalHeaderLabels(["Genes"])
+        self.genes_table.horizontalHeader().sectionClicked.connect(self.clicked_on_gene_header)
+        self.genes_table.topLevelWidget
         self.genes_table.verticalHeader().setVisible(False)
         self.genes_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.genes_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        QAbstractItemView.SelectionMode.NoSelection
         self.genes_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.genes_table.horizontalHeader().setStretchLastSection(True)
         self.genes_table.itemSelectionChanged.connect(self._on_gene_selected)
 
         self.clusters_table = QTableWidget(0, 1)
         self.clusters_table.setHorizontalHeaderLabels(["Clusters"])
+        self.clusters_table.horizontalHeader().sectionClicked.connect(self.clicked_on_cluster_header)
         self.clusters_table.verticalHeader().setVisible(False)
         self.clusters_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.clusters_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -493,16 +499,23 @@ class GenExpressionWidget(QWidget):
         gene_index = items[0].data(Qt.ItemDataRole.UserRole)
         if gene_index is not None:
             self.sGeneSelected.emit(int(gene_index))
+            self.clusters_table.clearSelection()
 
     def _on_cluster_selected(self):
         items = self.clusters_table.selectedItems()
         if not items:
             return
         self.sClusterSelected.emit(items[0].text())
+        self.genes_table.clearSelection()
 
     def refresh_theme(self):
         """no theme-dependent styling, just for future proofing"""
         pass
+    def clicked_on_gene_header(self):
+        self.sGeneHeaderClicked.emit()
+
+    def clicked_on_cluster_header(self):
+        self.sClusterHeaderClicked.emit()
 
 
 class SettingList(QListWidget):
