@@ -15,7 +15,6 @@ class MenuBar(QMenuBar):
     sRequestSave = Signal()
     sRequestSettings = Signal()
     sExampleProject = Signal()
-    sGenExpression = Signal()
     sPreviewDatabase = Signal(str)
     sUndo = Signal()
     sRedo = Signal()
@@ -93,9 +92,6 @@ class MenuBar(QMenuBar):
         macros_example_project = Action(self,
                                         "Example Project",
                                         self.sExampleProject.emit)
-        macros_gen_expression = Action(self,
-                                                "Gen Expression",
-                                                self.sGenExpression.emit)
         macros_preview_annotations = Action(self,
                                             "Annotations",
                                             lambda: self.sPreviewDatabase.emit("Annotations"))
@@ -120,7 +116,6 @@ class MenuBar(QMenuBar):
                         action_undo,
                         action_redo,
                         macros_example_project,
-                        macros_gen_expression,
                         macros_preview_annotations,
                         macros_preview_images,
                         macros_preview_patients,
@@ -137,7 +132,6 @@ class MenuBar(QMenuBar):
                               action_import,
                               action_import_label_table))
         self.macros.addAction(macros_example_project)
-        self.macros.addAction(macros_gen_expression)
         self.preview.addActions((macros_preview_annotations,
                                  macros_preview_images,
                                  macros_preview_patients,
@@ -165,7 +159,7 @@ class MenuBar(QMenuBar):
 
         self.setCornerWidget(self.nav_widget, Qt.Corner.TopRightCorner)
         
-        self.enable_tools(["New Project", "Open Project", "Quit Program", "Example Project", "Gen Expression"])
+        self.enable_tools(["New Project", "Open Project", "Quit Program", "Example Project"])
 
     def enable_tools(self, tools: List[str] = None):
         """enables the tools specified in the list; if no parameter is passed, enable all"""

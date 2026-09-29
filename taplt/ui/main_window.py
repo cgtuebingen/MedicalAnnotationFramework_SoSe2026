@@ -223,7 +223,6 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sOpenProject.connect(self.open_project)
         self.menubar.sCloseProject.connect(self.close_project)
         self.menubar.sExampleProject.connect(self.macros.example_project)
-        self.menubar.sGenExpression.connect(self.loadGenExpressions)
         self.gen_expression.sLoadRequested.connect(self.loadGenExpressions)
         self.gen_expression.sLoadClustersRequested.connect(self.loadClusters)
         self.labels_list.label_table.sImportRequested.connect(self.menubar.sRequestImportLabelTable.emit)
@@ -497,7 +496,6 @@ class LabelingMainWindow(QMainWindow):
             self.apply_settings(dlg.settings)
 
     def loadGenExpressions(self):
-        print("loadGenExpressions called, self id:", id(self), "gen_expression widget id:", id(self.gen_expression))
         scaling_path, _ = QFileDialog.getOpenFileName(self,
                                                 caption="Select GenExpressions Scaling.json",
                                                 dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",#str(Path.home()),

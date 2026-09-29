@@ -305,7 +305,7 @@ class GenExpression(QGraphicsObject):
         QGraphicsObject.__init__(self)
         self.center = center
         self.radius = radius 
-        self.color_map, self.draw_new_color = colormap_rgb(n=5)  # have a buffer for new classes
+        self.colorWhenUndefined = QColor(255,0,255)  # have a buffer for new classes
         self.drawing = False
         self.expressions = {}  # type: Dict[int, Shape]
         self.setAcceptHoverEvents(False)
@@ -368,7 +368,7 @@ class GenExpression(QGraphicsObject):
                     for i in range(n):    
                         shapes.append(Shape(image_size=QSize(int(s.width()), int(s.height())),
                                             mode=Shape.ShapeMode.FIXED, # type: ignore
-                                            color=self.draw_new_color, 
+                                            color=self.colorWhenUndefined, 
                                             points=point))
             self.add_shapes(shapes)
             if event is not None:
@@ -447,7 +447,7 @@ class GenExpression(QGraphicsObject):
             point = [QPointF(x, y), QPointF(x + radius, y)]
             shapes.append(Shape(image_size=image_size,
                                 mode=Shape.ShapeMode.FIXED,  # type: ignore
-                                color=self.draw_new_color,
+                                color=self.colorWhenUndefined,
                                 points=point))
         self.add_shapes(shapes)
         self.shapes = shapes
@@ -493,11 +493,9 @@ class GenExpression(QGraphicsObject):
             for shape, spot in zip(self.shapes, self.spots):
                 assigned = str(self.cluster_by_barcode.get(spot["barcode"], ""))
                 if cluster_id in ("All", "") or assigned == str(cluster_id):
-                    shape.init_color(cluster_color.get(assigned, self.draw_new_color))
+                    shape.init_color(cluster_color.get(assigned, self.colorWhenUndefined))
                 else:
                     shape.init_color(hidden)
-                #if isValid(shape):
-                #    shape.update()
             self.update()
 
     def removeUnusedSpots(self, matrix):
@@ -614,7 +612,7 @@ class GenExpression(QGraphicsObject):
             def getColorOFValue(val:int):
                 if val == 0:
                     return QColor(255,255,255,a=0)
-                return QColor(55+int(200*val/max_value), 128-int(128*val/max_value),50)
+                return QColor(200-int(200*val/max_value), 25+int(230*val/max_value), 20)
             return getColorOFValue
     @Slot()
     def set_drawing_to_false(self):
