@@ -34,41 +34,6 @@ DEFAULT_RIGHT_PANEL_WIDTH = 280
 MIN_RIGHT_PANEL_WIDTH = 180
 
 
-class WsiResolutionDialog(QDialog):
-    """Asks the user which resolution whole slide image (WSI) files should be loaded as"""
-
-    HIGH_RES = "high resolution PNG"
-    LOW_RES = "low resolution PNG"
-
-    def __init__(self, parent=None):
-        super(WsiResolutionDialog, self).__init__(parent)
-        self.setWindowTitle("WSI Resolution")
-        self.resolution = self.HIGH_RES  # default choice
-
-        self.setLayout(QVBoxLayout())
-
-        info_label = QLabel("Which resolution should whole slide image (WSI) files be loaded as?")
-        info_label.setWordWrap(True)
-        self.layout().addWidget(info_label)
-
-        self.high_res_button = QRadioButton(self.HIGH_RES)
-        self.low_res_button = QRadioButton(self.LOW_RES)
-        self.high_res_button.setChecked(True)
-
-        self.layout().addWidget(self.high_res_button)
-        self.layout().addWidget(self.low_res_button)
-
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
-        button_box.accepted.connect(self.accept)
-        self.layout().addWidget(button_box)
-
-        self.high_res_button.toggled.connect(self._update_resolution)
-        self.low_res_button.toggled.connect(self._update_resolution)
-
-    def _update_resolution(self):
-        self.resolution = self.HIGH_RES if self.high_res_button.isChecked() else self.LOW_RES
-
-
 class LabelingMainWindow(QMainWindow):
     """The main window for the application"""
 
@@ -83,11 +48,9 @@ class LabelingMainWindow(QMainWindow):
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
     sRequestImportInfo = Signal()
-    sSendSpotsToDraw = Signal(str)
+    sSendSpotsToDraw = Signal(str, str)
     sSendMatrixOfGenesAndBarcodes = Signal(str)
     sAddLabelTable = Signal(str)
-    sSetWsiResolution = Signal(str)
-    sSetWsiResolution = Signal(str)
     sToggleGenExpression = Signal(bool)
 
     @dataclass
@@ -224,7 +187,6 @@ class LabelingMainWindow(QMainWindow):
         self.changes = list()
         self.autoSave = False
         self.project_location = ""
-        self.wsi_resolution = WsiResolutionDialog.HIGH_RES
 
         self.macros = Macros()
 
@@ -483,11 +445,6 @@ class LabelingMainWindow(QMainWindow):
             if dlg.project_path:
                 database_path = dlg.project_path + Structure.DATABASE_DEFAULT_NAME
 
-                res_dlg = WsiResolutionDialog(self)
-                res_dlg.exec()
-                self.wsi_resolution = res_dlg.resolution
-                self.sSetWsiResolution.emit(self.wsi_resolution)
-
                 self.set_welcome_screen(False)
                 self.sCreateNewProject.emit(database_path, dlg.files)
                 self.menubar.enable_tools()
@@ -504,11 +461,6 @@ class LabelingMainWindow(QMainWindow):
 
                 # make sure the database is inside a project environment
                 if check_environment(str(Path(database).parents[0])):
-                    res_dlg = WsiResolutionDialog(self)
-                    res_dlg.exec()
-                    self.wsi_resolution = res_dlg.resolution
-                    self.sSetWsiResolution.emit(self.wsi_resolution)
-
                     self.sOpenProject.emit(database)
                     self.set_welcome_screen(False)
                     self.menubar.enable_tools()
@@ -539,6 +491,11 @@ class LabelingMainWindow(QMainWindow):
 
     def loadGenExpressions(self):
         print("loadGenExpressions called, self id:", id(self), "gen_expression widget id:", id(self.gen_expression))
+        scaling_path, _ = QFileDialog.getOpenFileName(self,
+                                                caption="Select GenExpressions Scaling.json",
+                                                dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",#str(Path.home()),
+                                                filter="JSON (*.json)",
+                                                options=QFileDialog.Option.DontUseNativeDialog)
         spatial_path, _ = QFileDialog.getOpenFileName(self,
                                                       caption="Select GenExpressions csv tissue positions",
                                                       dir="C:\\Users\\David\\Documents\\Studium\\PI4\\10x\\spatial",
@@ -546,7 +503,7 @@ class LabelingMainWindow(QMainWindow):
                                                       filter="Database (*.csv)",
                                                       options=QFileDialog.Option.DontUseNativeDialog)
         if spatial_path:
-            self.sSendSpotsToDraw.emit(spatial_path)
+            self.sSendSpotsToDraw.emit(spatial_path, scaling_path)
             expression_path, _ = QFileDialog.getOpenFileName(self,
                                                              caption="Select GenExpressions h5 Matrix",
                                                              dir=str("/".join(spatial_path.split("/")[:-2]) + "/"),

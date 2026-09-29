@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QMessageBox, QPushButton, QStyle, QDialog, QTextEdit, QDialogButtonBox, QVBoxLayout, \
-    QLineEdit, QLabel, QFrame, QListWidgetItem, QListWidget, QHBoxLayout, QFileDialog, QComboBox
+    QLineEdit, QLabel, QFrame, QListWidgetItem, QListWidget, QHBoxLayout, QFileDialog, QComboBox, QRadioButton
 from PySide6.QtCore import QSize, QPoint
 from PySide6.QtGui import Qt, QColor, QFont
 
@@ -480,6 +480,46 @@ class SettingDialog(QDialog):
         self.settings.append(("Font size", self.font_size_combo.currentText()))
         self.close()
 
+class WsiResolutionDialog(QDialog):
+    """Asks the user to pick a scaling factor (or resolution) from the given options."""
+
+    HIGH_RES = "high resolution PNG"
+    LOW_RES = "low resolution PNG"
+
+    def __init__(self, parent=None, options: List[str] = None,
+                 title: str = "Select Scaling Factor",
+                 message: str = "Which scaling factor should be used?"):
+        super(WsiResolutionDialog, self).__init__(parent)
+        self.setWindowTitle(title)
+        self.options = options if options else [self.HIGH_RES, self.LOW_RES]
+        self.resolution = 0
+
+        self.setLayout(QVBoxLayout())
+
+        info_label = QLabel(message)
+        info_label.setWordWrap(True)
+        self.layout().addWidget(info_label)
+
+        self.buttons = []
+        for i, option in enumerate(self.options):
+            button = QRadioButton(option)
+            if i == 0:
+                button.setChecked(True)
+            button.toggled.connect(self._update_resolution)
+            self.layout().addWidget(button)
+            self.buttons.append(button)
+
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        self.layout().addWidget(button_box)
+
+    def _update_resolution(self):
+        for i, button in enumerate(self.buttons):
+            if button.isChecked():
+                self.resolution = i
+                break
 
 def move_to_center(widget, parent_pos: QPoint, parent_size: QSize):
     # TODO: implement move_to_center somewhere else, so the dialogs don't have to demand a parent widget

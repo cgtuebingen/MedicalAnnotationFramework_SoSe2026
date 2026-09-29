@@ -16,10 +16,13 @@ from copy import deepcopy
 import numpy as np
 import pandas
 import h5py
+import json
 
 from taplt.config import SCALING_INITIAL
 
 from taplt.utils.qt import closest_euclidean_distance
+
+from taplt.ui.dialogs import WsiResolutionDialog
 
 
 class Shape(QGraphicsObject):
@@ -296,7 +299,8 @@ class GenExpression(QGraphicsObject):
         self.expressions = {}  # type: Dict[int, Shape]
         self.setAcceptHoverEvents(False)
         self.setVisible(False)
-        self.wsi_resolution = "high resolution PNG"
+        self.spots = []
+        self.shapes = []
 
     def paint(self, *args):
             pass
@@ -329,10 +333,6 @@ class GenExpression(QGraphicsObject):
                 scene_event.setModifiers(event.modifiers())
                 scene_event.setAccepted(False)
 
-    @Slot(str)
-    def setWsiResolution(self, resolution: str):
-        self.wsi_resolution = resolution
-
     @Slot()
     def create_shape(self, event = None):
         if not self.drawing:
@@ -364,30 +364,53 @@ class GenExpression(QGraphicsObject):
         self.remove_shapes(list(self.expressions.values()))
 
     @Slot()
-    def recieveSpotsToDraw(self, spatial_path):
-        f = pandas.read_csv(spatial_path)  
+    def recieveSpotsToDraw(self, spatial_path, scaling_path):
+        f = pandas.read_csv(spatial_path)
         spots = [{"barcode":barcode,
                   "pxl_row":pxl_row_in_fullres,
                   "pxl_col":pxl_col_in_fullres} for [barcode,_,_,_,pxl_row_in_fullres,pxl_col_in_fullres] in f.to_numpy()]
-        print("Recieved:\t", len(spots), type(spots))
+        scaling_factor = None
+
+        if scaling_path:
+            with open(scaling_path, "r") as file:
+                data = json.load(file)
+            factors_to_choose_from_keys = []
+            factors_to_choose_from_names = []
+            for key in data.keys():
+                if key.endswith("_scalef"):
+                    name = " ".join([word[0].upper() + word[1:] for word in key.split("_")[:-1]])
+                    factors_to_choose_from_names.append(name)
+                    factors_to_choose_from_keys.append(key)
+            if len(factors_to_choose_from_keys) == 0:
+                raise Exception("JSON File has no scalef entries!")
+            res_dlg = WsiResolutionDialog(
+                self.parent(),
+                options=factors_to_choose_from_names,
+                title="Select Scaling Factor",
+                message="Which scaling factor from the JSON file should be used?",
+            )
+            if not res_dlg.exec():
+                return
+            selected_key = factors_to_choose_from_keys[res_dlg.resolution]
+            scaling_factor = float(data[selected_key])
+
+        if scaling_factor is None:
+            print("No Scaling Factor given")
+            scaling_factor = 0.056121446
 
         self.clear()
         self.update()
 
-        # TODO Scalling by scalfactors.json
-        regist_target_img_scalef = 0.16836435
-        tissue_hires_scalef = 0.056121446
-        tissue_lowres_scalef = 0.016836435
-        fiducial_diameter_fullres = 384.18505640709947
-        spot_diameter_fullres = 256.12337093806633
-        scalef = tissue_lowres_scalef if self.wsi_resolution == "low resolution PNG" else tissue_hires_scalef
-        radius: float = (spots[1].get("pxl_col") - spots[0].get("pxl_col")) * scalef / 3.0
+        radius: float = abs(spots[1].get("pxl_col") - spots[0].get("pxl_col")) * scaling_factor / 3.0
+        if radius == 0:
+            radius = 1.0
         shapes: List[Shape] = []
+
         s = self.scene()
 
         for spot in spots:
-            x = int(spot.get("pxl_col") * scalef)
-            y = int(spot.get("pxl_row") * scalef)
+            x = int(spot.get("pxl_col") * scaling_factor)
+            y = int(spot.get("pxl_row") * scaling_factor)
 
             point = [QPointF(x, y), QPointF(x + radius, y)]
             shapes.append(Shape(image_size=QSize(int(s.width()), int(s.height())),
@@ -397,12 +420,14 @@ class GenExpression(QGraphicsObject):
         self.add_shapes(shapes)
         self.shapes = shapes
         self.spots = spots
+        self.setVisible(True)
         self.sRequestWSIZoomData.emit()
 
     def recieveGenesBarcodeMatrix(self, matrix_path:str):
+        if not self.spots or not self.shapes:
+            return
         expression_content = h5py.File(matrix_path, 'r')
         hd5f_keys = np.array(expression_content["matrix"])
-        print(list(hd5f_keys))
         matrix  = expression_content["matrix"]
         self.matrix = matrix
         def decoder(a:bytes):
@@ -509,12 +534,15 @@ class GenExpression(QGraphicsObject):
             return
         if isinstance(shapes, Shape):
             shapes = [shapes]
+        ids_to_remove = []
         for shape_id in self.expressions:
             shape = self.expressions[shape_id]
             if shape in shapes:
                 shape.setParentItem(None)
                 shape.deleteLater()
-                del shape
+                ids_to_remove.append(shape_id)
+        for shape_id in ids_to_remove:
+            del self.expressions[shape_id]
         self.update()
     def update_shape_positions(self, offset_x, offset_y, pixmap_x, pixmap_y, downsample):
 
