@@ -345,6 +345,11 @@ class SlideView(QGraphicsView):
             event.modifiers() & Qt.KeyboardModifier.ControlModifier
         )
 
+        if ctrl_pressed and self.parentWidget() is not None:
+            parent = self.parentWidget()
+            if hasattr(parent, "annotations") and getattr(parent.annotations, "drawing", False):
+                parent.annotations.cancel_drawing()
+
         if (
             event.button() == Qt.MouseButton.LeftButton
         and (not self.annotationMode or ctrl_pressed)
