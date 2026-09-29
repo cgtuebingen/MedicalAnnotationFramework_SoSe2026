@@ -95,6 +95,9 @@ class SQLiteDatabase(QObject):
         self.file_tables = FILE_TABLES
         self.is_initialized = False
         self.database_path = "none"
+        self.connection = None
+        self.cursor = None
+        self.settings = None
 
     def add_annotation(self, modality: int, file: int, patient: int, shape: bytes, label: int):
         """ adds an entry to the annotation table using the parameter values"""
