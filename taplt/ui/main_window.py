@@ -114,16 +114,18 @@ class LabelingMainWindow(QMainWindow):
 
         # the label, polygons and file lists — each wrapped in a foldable section
         self.labels_list = LabelsViewingWidget()
+        self.labels_list.setMinimumSize(QSize(0, 50))
         self.labels_list.file_label.hide()  # header now provided by the collapsible box
         self.labels_section = CollapsibleBox("Labels")
         self.labels_section.setContentWidget(self.labels_list)
 
         self.polygons = AnnotationTree()
-        self.polygons.setMinimumSize(QSize(0, 300))
+        self.polygons.setMinimumSize(QSize(0, 200))
         self.polygons_section = CollapsibleBox("Polygons")
         self.polygons_section.setContentWidget(self.polygons)
 
         self.gen_expression = GenExpressionWidget()
+        self.polygons.setMinimumSize(QSize(0, 150))
         self.gen_expression_section = CollapsibleBox("Gen Expression")
         self.gen_expression_section.setContentWidget(self.gen_expression)
         self.gen_expression.sToggled.connect(self.sToggleGenExpression.emit)

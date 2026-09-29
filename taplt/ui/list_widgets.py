@@ -412,17 +412,19 @@ class GenExpressionWidget(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(4)
 
-        self.some_checkbox = QCheckBox("Enable Gen-Expression")
+        headbuttons = QHBoxLayout()
+        self.layout().addLayout(headbuttons)
+        self.some_checkbox = QCheckBox("Enable")
         self.some_checkbox.toggled.connect(self.sToggled.emit)
-        self.layout().addWidget(self.some_checkbox)
+        headbuttons.addWidget(self.some_checkbox)
 
         self.load_button = QPushButton("Load")
         self.load_button.clicked.connect(self.sLoadRequested.emit)
-        self.layout().addWidget(self.load_button)
+        headbuttons.addWidget(self.load_button)
 
-        self.load_clusters_button = QPushButton("Load clusters")
+        self.load_clusters_button = QPushButton("Cluster")
         self.load_clusters_button.clicked.connect(self.sLoadClustersRequested.emit)
-        self.layout().addWidget(self.load_clusters_button)
+        headbuttons.addWidget(self.load_clusters_button)
 
         self.gene_filter = QLineEdit()
         self.gene_filter.setPlaceholderText("Filter genes")
