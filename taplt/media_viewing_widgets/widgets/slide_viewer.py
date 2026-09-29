@@ -40,9 +40,10 @@ class SlideView(QGraphicsView):
         self.height = self.frameRect().height()
         self.mouse_pos: QPointF = QPointF()
 
-        # Boolean for panning and the starting position of the pan
+        # Boolean for panning and the starting position of the pan and annotation mode
         self.panning: bool = False
         self.pan_start: QPointF = QPointF()
+        self.annotationMode = False
 
         # Logic for zooming
         self.cur_downsample: float = 0.0  # Overall zoom
@@ -340,7 +341,14 @@ class SlideView(QGraphicsView):
         :type event: QMouseEvent
         :return: /
         """
-        if event.button() == Qt.MouseButton.LeftButton and not self.annotationMode:
+        ctrl_pressed = bool(
+            event.modifiers() & Qt.KeyboardModifier.ControlModifier
+        )
+
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+        and (not self.annotationMode or ctrl_pressed)
+        ):  
             self.panning = True
             self.pan_start = self.mapToScene(event.pos())
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
@@ -354,7 +362,7 @@ class SlideView(QGraphicsView):
         :type event: QMouseEvent
         :return: /
         """
-        if event.button() == Qt.MouseButton.LeftButton and not self.annotationMode:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.panning = False
             self.setCursor(Qt.CursorShape.ArrowCursor)
         super().mouseReleaseEvent(event)
@@ -367,7 +375,7 @@ class SlideView(QGraphicsView):
         :type event: QMouseEvent
         :return: /
         """
-        if self.panning and not self.annotationMode:
+        if self.panning:
             new_pos = self.mapToScene(event.pos())
             move = self.pan_start - new_pos
             self.pan_start = new_pos
