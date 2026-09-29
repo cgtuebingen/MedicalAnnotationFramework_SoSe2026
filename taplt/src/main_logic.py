@@ -30,8 +30,15 @@ class MainLogic:
         self.main_window.sSendSpotsToDraw.connect(self.main_window.file_display.gen_expressions.recieveSpotsToDraw)
         self.main_window.sSendMatrixOfGenesAndBarcodes.connect(self.main_window.file_display.gen_expressions.recieveGenesBarcodeMatrix)
 
-
-        self.main_window.sToggleGenExpression.connect(self.main_window.file_display.gen_expressions.setVisible)
+        gen_overlay = self.main_window.file_display.gen_expressions
+        self.main_window.sSendClusters.connect(gen_overlay.recieveClusters)
+        gen_panel = self.main_window.gen_expression
+        self.main_window.sToggleGenExpression.connect(gen_overlay.setVisible)
+        gen_overlay.sEnabled.connect(gen_panel.set_checked)
+        gen_overlay.sGenesReady.connect(gen_panel.set_genes)
+        gen_overlay.sClustersReady.connect(gen_panel.set_clusters)
+        gen_panel.sGeneSelected.connect(gen_overlay.color_by_gene)
+        gen_panel.sClusterSelected.connect(gen_overlay.color_by_cluster)
 
         # main window's menubar -> database
         self.main_window.menubar.sRequestImport.connect(self.database.send_import_info)

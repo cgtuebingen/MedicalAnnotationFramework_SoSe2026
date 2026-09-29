@@ -23,6 +23,8 @@ from taplt.config import SCALING_INITIAL
 from taplt.utils.qt import closest_euclidean_distance
 
 from taplt.ui.dialogs import WsiResolutionDialog
+from shiboken6 import isValid
+from pathlib import Path
 
 
 class Shape(QGraphicsObject):
@@ -290,6 +292,10 @@ class VertexCollection(object):
 
 class GenExpression(QGraphicsObject):
     sRequestWSIZoomData = Signal()
+    sEnabled = Signal(bool)
+    sGenesReady = Signal(list)
+    sClustersReady = Signal(list)
+
     def __init__(self, center:QPoint, radius:int):
         QGraphicsObject.__init__(self)
         self.center = center
@@ -301,6 +307,12 @@ class GenExpression(QGraphicsObject):
         self.setVisible(False)
         self.spots = []
         self.shapes = []
+        self.matrix = None
+        self.used_barcodes = np.array([])
+        self.gene_names = []
+        self.cluster_by_barcode = {}
+        self.scaling_factor = None
+        self.load_ok = False
 
     def paint(self, *args):
             pass
@@ -362,9 +374,15 @@ class GenExpression(QGraphicsObject):
         :return:
         """
         self.remove_shapes(list(self.expressions.values()))
+        self.expressions = {}
+        self.shapes = []
+        self.spots = []
+        self.cluster_by_barcode = {}
+        self.sClustersReady.emit([])
 
     @Slot()
     def recieveSpotsToDraw(self, spatial_path, scaling_path):
+        self.load_ok = False
         f = pandas.read_csv(spatial_path)
         spots = [{"barcode":barcode,
                   "pxl_row":pxl_row_in_fullres,
@@ -374,32 +392,34 @@ class GenExpression(QGraphicsObject):
         if scaling_path:
             with open(scaling_path, "r") as file:
                 data = json.load(file)
-            factors_to_choose_from_keys = []
-            factors_to_choose_from_names = []
+            rows = []
             for key in data.keys():
-                if key.endswith("_scalef"):
-                    name = " ".join([word[0].upper() + word[1:] for word in key.split("_")[:-1]])
-                    factors_to_choose_from_names.append(name)
-                    factors_to_choose_from_keys.append(key)
-            if len(factors_to_choose_from_keys) == 0:
+                if str(key).endswith("_scalef"):
+                    name = " ".join([word[0].upper() + word[1:] for word in str(key).split("_")[:-1]])
+                    rows.append({"name": name, "key": key, "value": data[key]})
+            if len(rows) == 0:
                 raise Exception("JSON File has no scalef entries!")
             res_dlg = WsiResolutionDialog(
-                self.parent(),
-                options=factors_to_choose_from_names,
+                None,
+                options=rows,
                 title="Select Scaling Factor",
-                message="Which scaling factor from the JSON file should be used?",
+                message="Select a scaling factor from the JSON file. Any number of *_scalef entries is supported.",
             )
             if not res_dlg.exec():
                 return
-            selected_key = factors_to_choose_from_keys[res_dlg.resolution]
-            scaling_factor = float(data[selected_key])
+            try:
+                scaling_factor = float(res_dlg.selected_value)
+            except (TypeError, ValueError):
+                scaling_factor = float(data[res_dlg.selected_key])
 
         if scaling_factor is None:
             print("No Scaling Factor given")
             scaling_factor = 0.056121446
 
         self.clear()
+        QCoreApplication.processEvents()
         self.update()
+        self.scaling_factor = scaling_factor
 
         radius: float = abs(spots[1].get("pxl_col") - spots[0].get("pxl_col")) * scaling_factor / 3.0
         if radius == 0:
@@ -407,95 +427,154 @@ class GenExpression(QGraphicsObject):
         shapes: List[Shape] = []
 
         s = self.scene()
+        image_size = QSize(int(s.width()), int(s.height())) if s else QSize(1, 1)
 
         for spot in spots:
             x = int(spot.get("pxl_col") * scaling_factor)
             y = int(spot.get("pxl_row") * scaling_factor)
 
             point = [QPointF(x, y), QPointF(x + radius, y)]
-            shapes.append(Shape(image_size=QSize(int(s.width()), int(s.height())),
+            shapes.append(Shape(image_size=image_size,
                                 mode=Shape.ShapeMode.FIXED,  # type: ignore
                                 color=self.draw_new_color,
                                 points=point))
         self.add_shapes(shapes)
         self.shapes = shapes
         self.spots = spots
+        self.load_ok = True
         self.setVisible(True)
+        self.sEnabled.emit(True)
         self.sRequestWSIZoomData.emit()
 
+    @Slot(str)
+    def recieveClusters(self, cluster_path: str):
+        """Load a barcode -> cluster CSV. First column is the barcode, second is the cluster ID."""
+        if not cluster_path:
+            return
+        table = pandas.read_csv(cluster_path)
+        if table.shape[1] < 2:
+            QMessageBox.warning(None, "Invalid cluster CSV",
+                                "The file needs at least two columns: barcode and cluster.")
+            return
+        mapping = dict(zip(table.iloc[:, 0].astype(str), table.iloc[:, 1].astype(str)))
+
+        # warn if nothing lines up with the loaded spots (e.g. missing "-1" suffix)
+        if self.spots and not any(spot["barcode"] in mapping for spot in self.spots):
+            QMessageBox.warning(None, "No matching barcodes",
+                                "None of the barcodes in this file match the loaded spots.")
+            return
+
+        self.cluster_by_barcode = mapping
+        self.sClustersReady.emit(["All"] + sorted(set(mapping.values()), key=str))
+
     def recieveGenesBarcodeMatrix(self, matrix_path:str):
-        if not self.spots or not self.shapes:
+        if not self.load_ok or not self.spots or not self.shapes:
             return
         expression_content = h5py.File(matrix_path, 'r')
-        hd5f_keys = np.array(expression_content["matrix"])
         matrix  = expression_content["matrix"]
         self.matrix = matrix
         def decoder(a:bytes):
             return a.decode("utf-8")
         self.used_barcodes = np.array(list(map(decoder, matrix["barcodes"])))
-        spots_barcodes = [a['barcode'] for a in self.spots]
-        j=len(self.used_barcodes)-1
-        for i in range(len(self.spots)-1,-1,-1):
-            if j>0 and self.spots[i]["barcode"]==self.used_barcodes[j] or self.spots[i]["barcode"] in self.used_barcodes:
-                j-=1
+        used = set(self.used_barcodes)
+        keep_shapes = []
+        keep_spots = []
+        drop_shapes = []
+        for shape, spot in zip(self.shapes, self.spots):
+            if spot["barcode"] in used:
+                keep_shapes.append(shape)
+                keep_spots.append(spot)
             else:
-                self.shapes[i].deleteLater()
-                self.shapes[i].disconnect(self.shapes[i])
-                self.shapes.pop(i)
-                spots_barcodes.pop(i)
-        self.update()
+                drop_shapes.append(shape)
+        self.remove_shapes(drop_shapes)
+        barcode_to_idx = {spot["barcode"]: i for i, spot in enumerate(keep_spots)}
         reordered_shapes = []
         reordered_spots = []
-        spots_barcodes = np.array(spots_barcodes)
         for barcode in self.used_barcodes:
-            shape_index = np.where(barcode == spots_barcodes)[0][0]
-            reordered_shapes.append(self.shapes[shape_index])
-            reordered_spots.append(spots_barcodes[shape_index])
+            if barcode not in barcode_to_idx:
+                continue
+            idx = barcode_to_idx[barcode]
+            reordered_shapes.append(keep_shapes[idx])
+            reordered_spots.append(keep_spots[idx])
         self.shapes = reordered_shapes
+        self.spots = reordered_spots
 
-        result =  self.read_col(2326, matrix)
+        self.gene_names = []
+        for name in matrix["features"]["name"]:
+            if isinstance(name, (bytes, bytearray)):
+                self.gene_names.append(name.decode("utf-8"))
+            else:
+                self.gene_names.append(str(name))
+        self.sGenesReady.emit(self.gene_names)
+
+        self.cluster_by_barcode = {}
+        self.sClustersReady.emit([])
         self.update()
+
+    def color_by_gene(self, gene_index: int):
+        if self.matrix is None or gene_index < 0:
+            return
+        result = self.read_col(gene_index, self.matrix)
         self.setColor(result)
+        self.update()
+
+    def color_by_cluster(self, cluster_id: str):
+        if not self.cluster_by_barcode:
+            return
+        colors, _ = colormap_rgb(n=max(8, len(set(self.cluster_by_barcode.values())) + 1))
+        unique_clusters = sorted(set(str(v) for v in self.cluster_by_barcode.values()), key=str)
+        cluster_color = {cid: colors[i % len(colors)] for i, cid in enumerate(unique_clusters)}
+        hidden = QColor(255, 255, 255, a=0)
+        for shape, spot in zip(self.shapes, self.spots):
+            assigned = str(self.cluster_by_barcode.get(spot["barcode"], ""))
+            if cluster_id in ("All", "") or assigned == str(cluster_id):
+                shape.init_color(cluster_color.get(assigned, self.draw_new_color))
+            else:
+                shape.init_color(hidden)
+            if isValid(shape):
+                shape.update()
+        self.update()
 
     def setColor(self, gen_occurence:list[int]):
-        max_amount = max(gen_occurence)
+        if not gen_occurence:
+            return
+        max_amount = max(gen_occurence) or 1
         brusher = self.colorRange(max_amount)
-        for i in range(len(self.shapes)):
-            self.shapes[i].init_color(brusher(gen_occurence[i]))
+        for i, shape in enumerate(self.shapes):
+            value = gen_occurence[i] if i < len(gen_occurence) else 0
+            if isValid(shape):
+                shape.init_color(brusher(value))
+                shape.update()
                 
     def read_col(self, col:int, matrix):
         '''Given a gen, find all the spots where the gen appears and the amount'''
-        barcodes = matrix["barcodes"]
         data = matrix["data"]
-        genes = matrix["features"]["name"]
         indices = matrix["indices"]
         indptr = matrix["indptr"]
-        shape_x, shape_y = matrix["shape"]
-        gen = genes[col]
-        print(gen)
         data_np = np.array(data)
         indices_np= np.array(indices)
         indptr_np = np.array(indptr)
+        n_spots = max(len(indptr_np) - 1, 0)
+        spots_of_gene:list[int] = [0] * n_spots
         spots_of_gene_spared = np.where(indices_np == col)[0]
-        #print(spots_of_gene_spared)
-        spots_of_gene:list[int] = []
-        j = 0
         last_barcode_index = 0
         for spot in spots_of_gene_spared:
+            if last_barcode_index + 1 >= len(indptr_np):
+                break
             if spot < indptr_np[last_barcode_index+1]:
-                spots_of_gene.append(int(data_np[spot]))
+                spots_of_gene[last_barcode_index] = int(data_np[spot])
             else:
-                while spot >= indptr_np[last_barcode_index+1]:
-                    last_barcode_index+=1
-                    spots_of_gene.append(0)
-                spots_of_gene[-1] = int(data_np[spot])
+                while last_barcode_index + 1 < len(indptr_np) and spot >= indptr_np[last_barcode_index+1]:
+                    last_barcode_index += 1
+                if last_barcode_index < n_spots:
+                    spots_of_gene[last_barcode_index] = int(data_np[spot])
         return spots_of_gene
                     
     def setRandomColor(self):
         brusher = self.colorRange(10)
         for i in range(len(self.shapes)):
-            self.shapes[i].init_color(brusher(i % 10))
-        self.shapes = self.shapes
+            if isValid(self.shapes[i]):
+                self.shapes[i].init_color(brusher(i % 10))
     def colorRange(self, max_value:int):
             def getColorOFValue(val:int):
                 if val == 0:
@@ -517,12 +596,7 @@ class GenExpression(QGraphicsObject):
                 shape.setParentItem(self)
                 new_id = 0 if not self.expressions else max(self.expressions.keys()) + 1
                 self.expressions[new_id] = shape
-                #shape.selected.connect(self.shape_selected)
-                #shape.deleted.connect(lambda: self.remove_shapes(shape))
-                #shape.mode_changed.connect(self.shape_mode_changed)
-                #shape.drawingDone.connect(lambda s=shape: self.pending_shapes.append(s))
                 shape.drawingDone.connect(self.set_drawing_to_false)
-                #shape.sChange.connect(self.sChange.emit)
                 self.update()
     def remove_shapes(self, shapes: Union[Shape, List[Shape]]):
         """
@@ -534,23 +608,41 @@ class GenExpression(QGraphicsObject):
             return
         if isinstance(shapes, Shape):
             shapes = [shapes]
+        shapes_set = set(id(shape) for shape in shapes)
         ids_to_remove = []
-        for shape_id in self.expressions:
-            shape = self.expressions[shape_id]
-            if shape in shapes:
+        scene = self.scene()
+        for shape_id, shape in list(self.expressions.items()):
+            if id(shape) not in shapes_set:
+                continue
+            ids_to_remove.append(shape_id)
+            try:
+                if not isValid(shape):
+                    continue
                 shape.setParentItem(None)
+                if scene is not None:
+                    scene.removeItem(shape)
                 shape.deleteLater()
-                ids_to_remove.append(shape_id)
+            except RuntimeError:
+                pass
         for shape_id in ids_to_remove:
-            del self.expressions[shape_id]
+            self.expressions.pop(shape_id, None)
+        self.shapes = [shape for shape in self.shapes if id(shape) not in shapes_set and isValid(shape)]
         self.update()
     def update_shape_positions(self, offset_x, offset_y, pixmap_x, pixmap_y, downsample):
-
+        invalid_ids = []
         for shape_id in self.expressions.keys():
+            shape = self.expressions[shape_id]
+            try:
+                if not isValid(shape):
+                    invalid_ids.append(shape_id)
+                    continue
                 new_points = []
-                for point in self.expressions[shape_id]._anchorPoint:
+                for point in shape._anchorPoint:
                     scene_x = pixmap_x + (point.x() - offset_x) / downsample
                     scene_y = pixmap_y + (point.y() - offset_y) / downsample
                     new_points.append(QPointF(scene_x, scene_y))
-                self.expressions[shape_id].vertices.vertices = QPolygonF(new_points)
-                #self.expressions[shape_id].update() # UPDATE THROWS ERROR: RuntimeError: libshiboken: Internal C++ object (Shape) already deleted.
+                shape.vertices.vertices = QPolygonF(new_points)
+            except RuntimeError:
+                invalid_ids.append(shape_id)
+        for shape_id in invalid_ids:
+            self.expressions.pop(shape_id, None)

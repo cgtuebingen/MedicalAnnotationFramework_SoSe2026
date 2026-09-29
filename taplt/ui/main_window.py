@@ -50,6 +50,7 @@ class LabelingMainWindow(QMainWindow):
     sRequestImportInfo = Signal()
     sSendSpotsToDraw = Signal(str, str)
     sSendMatrixOfGenesAndBarcodes = Signal(str)
+    sSendClusters = Signal(str)
     sAddLabelTable = Signal(str)
     sToggleGenExpression = Signal(bool)
 
@@ -219,6 +220,7 @@ class LabelingMainWindow(QMainWindow):
         self.menubar.sExampleProject.connect(self.macros.example_project)
         self.menubar.sGenExpression.connect(self.loadGenExpressions)
         self.gen_expression.sLoadRequested.connect(self.loadGenExpressions)
+        self.gen_expression.sLoadClustersRequested.connect(self.loadClusters)
         self.labels_list.label_table.sImportRequested.connect(self.menubar.sRequestImportLabelTable.emit)
         self.labels_list.sCsvFilesDropped.connect(self.import_dropped_label_tables)
 
@@ -504,6 +506,8 @@ class LabelingMainWindow(QMainWindow):
                                                       options=QFileDialog.Option.DontUseNativeDialog)
         if spatial_path:
             self.sSendSpotsToDraw.emit(spatial_path, scaling_path)
+            if not self.file_display.gen_expressions.load_ok:
+                return
             expression_path, _ = QFileDialog.getOpenFileName(self,
                                                              caption="Select GenExpressions h5 Matrix",
                                                              dir=str("/".join(spatial_path.split("/")[:-2]) + "/"),
@@ -511,6 +515,16 @@ class LabelingMainWindow(QMainWindow):
                                                              options=QFileDialog.Option.DontUseNativeDialog)
             if expression_path:
                 self.sSendMatrixOfGenesAndBarcodes.emit(expression_path)
+
+    def loadClusters(self):
+        """lets the user pick a barcode -> cluster CSV and forwards the path"""
+        cluster_path, _ = QFileDialog.getOpenFileName(self,
+                                                      caption="Select cluster CSV (barcode, cluster)",
+                                                      dir=str(Path.home()),
+                                                      filter="CSV (*.csv)",
+                                                      options=QFileDialog.Option.DontUseNativeDialog)
+        if cluster_path:
+            self.sSendClusters.emit(cluster_path)
 
     def next_image(self, direction: int):
         """proceeds to the next/previous image"""

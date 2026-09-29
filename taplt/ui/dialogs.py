@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QMessageBox, QPushButton, QStyle, QDialog, QTextEdit, QDialogButtonBox, QVBoxLayout, \
-    QLineEdit, QLabel, QFrame, QListWidgetItem, QListWidget, QHBoxLayout, QFileDialog, QComboBox, QRadioButton
+    QLineEdit, QLabel, QFrame, QListWidgetItem, QListWidget, QHBoxLayout, QFileDialog, QComboBox, QTableWidget, \
+    QTableWidgetItem, QHeaderView, QAbstractItemView
 from PySide6.QtCore import QSize, QPoint
 from PySide6.QtGui import Qt, QColor, QFont
 
@@ -481,18 +482,21 @@ class SettingDialog(QDialog):
         self.close()
 
 class WsiResolutionDialog(QDialog):
-    """Asks the user to pick a scaling factor (or resolution) from the given options."""
+    """Table of scaling-factor options taken from a JSON file (any number of rows)."""
 
     HIGH_RES = "high resolution PNG"
     LOW_RES = "low resolution PNG"
 
-    def __init__(self, parent=None, options: List[str] = None,
+    def __init__(self, parent=None, options: List = None,
                  title: str = "Select Scaling Factor",
                  message: str = "Which scaling factor should be used?"):
         super(WsiResolutionDialog, self).__init__(parent)
         self.setWindowTitle(title)
-        self.options = options if options else [self.HIGH_RES, self.LOW_RES]
+        self.setMinimumWidth(480)
         self.resolution = 0
+        self.selected_key = None
+        self.selected_value = None
+        self._rows = self._normalize_options(options)
 
         self.setLayout(QVBoxLayout())
 
@@ -500,14 +504,28 @@ class WsiResolutionDialog(QDialog):
         info_label.setWordWrap(True)
         self.layout().addWidget(info_label)
 
-        self.buttons = []
-        for i, option in enumerate(self.options):
-            button = QRadioButton(option)
-            if i == 0:
-                button.setChecked(True)
-            button.toggled.connect(self._update_resolution)
-            self.layout().addWidget(button)
-            self.buttons.append(button)
+        self.table = QTableWidget(len(self._rows), 3)
+        self.table.setHorizontalHeaderLabels(["Option", "JSON key", "Value"])
+        self.table.verticalHeader().setVisible(False)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.doubleClicked.connect(self.accept)
+
+        for row, item in enumerate(self._rows):
+            self.table.setItem(row, 0, QTableWidgetItem(item["name"]))
+            self.table.setItem(row, 1, QTableWidgetItem(item["key"]))
+            self.table.setItem(row, 2, QTableWidgetItem(str(item["value"])))
+
+        if self._rows:
+            self.table.selectRow(0)
+            self._apply_row(0)
+
+        self.table.itemSelectionChanged.connect(self._update_resolution)
+        self.layout().addWidget(self.table)
 
         button_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -515,11 +533,37 @@ class WsiResolutionDialog(QDialog):
         button_box.rejected.connect(self.reject)
         self.layout().addWidget(button_box)
 
+    def _normalize_options(self, options: List) -> List[dict]:
+        if not options:
+            return [
+                {"name": self.HIGH_RES, "key": "tissue_hires_scalef", "value": ""},
+                {"name": self.LOW_RES, "key": "tissue_lowres_scalef", "value": ""},
+            ]
+        rows = []
+        for option in options:
+            if isinstance(option, dict):
+                rows.append({
+                    "name": str(option.get("name", option.get("key", ""))),
+                    "key": str(option.get("key", option.get("name", ""))),
+                    "value": option.get("value", ""),
+                })
+            else:
+                rows.append({"name": str(option), "key": str(option), "value": ""})
+        return rows
+
+    def _apply_row(self, row: int):
+        if row < 0 or row >= len(self._rows):
+            return
+        self.resolution = row
+        self.selected_key = self._rows[row]["key"]
+        self.selected_value = self._rows[row]["value"]
+
     def _update_resolution(self):
-        for i, button in enumerate(self.buttons):
-            if button.isChecked():
-                self.resolution = i
-                break
+        self._apply_row(self.table.currentRow())
+
+    def accept(self):
+        self._update_resolution()
+        super().accept()
 
 def move_to_center(widget, parent_pos: QPoint, parent_size: QSize):
     # TODO: implement move_to_center somewhere else, so the dialogs don't have to demand a parent widget
