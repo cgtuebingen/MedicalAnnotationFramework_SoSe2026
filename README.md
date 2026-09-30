@@ -71,6 +71,17 @@ After selecting the database file, the project will open up again.
 3. Draw an area inside the image
 4. Assign a label
 
+### Gene Expression
+1. Choose "Load"
+2. Select _Scaling JSON_
+3. Select _Tissue Position CSV_
+4. Choose the scaling factor according to your image
+5. Select _H5 Matrix with genes_
+6. Now Genes are displayed in the table,
+by selection you can see the spatial occurences
+7. Load _Cluster CSV_
+8. Choose cluster to display distribution of spots into cluster
+
 ### Database
 Every time you save your changes, the annotations will be stored in the database. 
 Click "Macros -> Preview Database" to preview the current version of the database and see how it fills up with every new annotation.
