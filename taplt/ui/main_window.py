@@ -43,7 +43,7 @@ class LabelingMainWindow(QMainWindow):
     sAddFile = Signal(str, str)
     sRequestUpdate = Signal(int)
     sRequestCheckForChanges = Signal(int, int)
-    sSaveToDatabase = Signal(list, int)
+    sSaveToDatabase = Signal(list, list, int)
     sDeleteFile = Signal(str, int)
     sUpdateSettings = Signal(list)
     sDisconnect = Signal()
@@ -553,8 +553,9 @@ class LabelingMainWindow(QMainWindow):
             shape for shape in self.file_display.annotations.annotations.values()
             if shape.isVisible()
         ]
+        gen_expression = self.file_display.gen_expressions.storeToDatabase()
         self.changes.clear()
-        self.sSaveToDatabase.emit(annotations, self.img_idx)
+        self.sSaveToDatabase.emit(annotations, gen_expression, self.img_idx)
         self.file_display.annotations.clear_history()
 
     def set_no_files_screen(self, b: bool):

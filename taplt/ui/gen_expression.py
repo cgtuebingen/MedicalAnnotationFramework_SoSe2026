@@ -21,12 +21,10 @@ import json
 import shiboken6 as shiboken
 
 from taplt.config import SCALING_INITIAL
-
 from taplt.utils.qt import closest_euclidean_distance
-
 from taplt.ui.dialogs import WsiResolutionDialog
+
 from shiboken6 import isValid
-from pathlib import Path
 
 
 class Shape(QGraphicsObject):
@@ -696,3 +694,11 @@ class GenExpression(QGraphicsObject):
             pass # Ask For ClusterCSV
         else:
             self.clearCluster()
+    def storeToDatabase(self):
+        scalefactor = ...
+        spots = ...
+        cluster = ...
+        matrix = ... 
+        isGeneSelected = ...
+        gene = ...
+        return [scalefactor, spots, cluster, matrix, isGeneSelected, gene]
