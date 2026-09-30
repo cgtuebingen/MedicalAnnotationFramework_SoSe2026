@@ -141,6 +141,8 @@ class CenterDisplayWidget(QWidget):
             self.current_slide = filepath
         else:
             self.current_slide = None
+            self.annotations.l0_coordinates.clear()
+            self.annotations.current_view_params = None
 
         if not file_type == Modality.slide:
             pixmap = QPixmap(filepath)

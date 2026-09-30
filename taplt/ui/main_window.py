@@ -503,6 +503,16 @@ class LabelingMainWindow(QMainWindow):
 
     def save_to_database(self):
         """stores the current state of the image to the database"""
+        for shape_id, shape in self.file_display.annotations.annotations.items():
+            if shape_id in self.file_display.annotations.l0_coordinates:
+                l0_pts = self.file_display.annotations.l0_coordinates[shape_id]
+                shape.serialization_points = [QPointF(x,y) for x,y in l0_pts]
+                shape.serialization_coordinate_space = 'l0'
+            else:
+                if hasattr(shape, 'serialization_points'):
+                    del shape.serialization_points
+                if hasattr(shape, 'serialization_coordinate_space'):
+                    del shape.serialization_coordinate_space
         annotations = [
             shape for shape in self.file_display.annotations.annotations.values()
             if shape.isVisible()
