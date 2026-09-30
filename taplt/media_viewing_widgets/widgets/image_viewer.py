@@ -23,6 +23,7 @@ class ImageViewer(QGraphicsView):
         self._scaling_factor = 5 / 4
 
         self._enablePan = False
+        self.annotationMode = False
         self._base_scale = 1.0
         self._current_scale = 1.0
         self._min_scale = 1.0
@@ -30,6 +31,9 @@ class ImageViewer(QGraphicsView):
 
     def set_zoom_speed(self, factor: float):
         self._scaling_factor = max(factor, 1.01)
+
+    def setAnnotationMode(self, state: bool):
+        self.annotationMode = state
 
     def _clamp_pan(self) -> None:
         """clamps panning so image cannot move outside frame"""
@@ -88,7 +92,15 @@ class ImageViewer(QGraphicsView):
 
     def mousePressEvent(self, event):
         """enables panning when left mouse button is pressed"""
-        if event.button() == Qt.LeftButton and not self.b_isEmpty:
+        ctrl_pressed = bool(
+            event.modifiers() & Qt.KeyboardModifier.ControlModifier
+        )
+
+        if (
+            event.button() == Qt.LeftButton
+        and not self.b_isEmpty
+        and (not self.annotationMode or ctrl_pressed)
+        ):
             self._enablePan = True
             self._panStart = self.mapToScene(event.pos())
             self.setDragMode(QGraphicsView.ScrollHandDrag)

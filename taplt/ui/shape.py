@@ -195,36 +195,50 @@ class Shape(QGraphicsObject):
     @Slot(QGraphicsSceneMouseEvent)
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         # TODO: Add a new tip that tells the user, that they can end the annotation by right clicking
-        if event.button() == Qt.MouseButton.LeftButton:
-            if self.mode == Shape.ShapeMode.CREATE:
-                point = self.check_out_of_bounds(event.scenePos())
-                if self.shape_type == "polygon":  
-                    if len(self.vertices.vertices) == 0:
-                        self.vertices.vertices.append(point)   # add the first point to the shape
-                        self.vertices.vertices.append(point)   # preview of the next point
-                    else:
-                        self.vertices.vertices[-1] = point     # update the preview point to a real point of the current mouse position
-                        self.vertices.vertices.append(point)   # new preview point     
-                elif self.shape_type == "point":
+        if event.button() == Qt.MouseButton.LeftButton and self.mode == Shape.ShapeMode.CREATE:
+            if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+                parent = self.parentItem()
+                if (
+                    parent is not None
+                    and hasattr(parent, "cancel_drawing")
+                    and hasattr(parent, "drawing")
+                    and getattr(parent, "drawing", False)
+                    and getattr(parent, "temp_shape", None) is self
+                ):
+                    self.ungrabMouse()
+                    parent.cancel_drawing()
+                event.ignore()
+                return
+
+            point = self.check_out_of_bounds(event.scenePos())
+            if self.shape_type == "polygon":
+                if len(self.vertices.vertices) == 0:
+                    self.vertices.vertices.append(point)   # add the first point to the shape
+                    self.vertices.vertices.append(point)   # preview of the next point
+                else:
+                    self.vertices.vertices[-1] = point     # update the preview point to a real point of the current mouse position
+                    self.vertices.vertices.append(point)   # new preview point
+            elif self.shape_type == "point":
+                self.vertices.vertices.append(point)
+                self.ungrabMouse()
+                self.is_closed_path = True
+                self.drawingDone.emit()
+                event.accept()
+                return
+            else:
+                if len(self.vertices.vertices) == 0:
                     self.vertices.vertices.append(point)
-                    self.ungrabMouse() 
+                else:
+                    self.vertices.vertices.append(point)
+                    self.ungrabMouse()
                     self.is_closed_path = True
+                    self.set_mode(Shape.ShapeMode.FIXED)
                     self.drawingDone.emit()
                     event.accept()
-                    return 
-                else:                                          
-                    if len(self.vertices.vertices) == 0:
-                        self.vertices.vertices.append(point)
-                    else:
-                        self.vertices.vertices.append(point)
-                        self.ungrabMouse() 
-                        self.is_closed_path = True
-                        self.set_mode(Shape.ShapeMode.FIXED)
-                        self.drawingDone.emit()
-                        event.accept()
-                        return 
-                self.update()   
-            elif self.contains(event.pos()):
+                    return
+            self.update()
+        elif event.button() == Qt.MouseButton.LeftButton:
+            if self.contains(event.pos()):
                 self.setSelected(True)
                 self.selected.emit()
                 self.clicked.emit(event)
