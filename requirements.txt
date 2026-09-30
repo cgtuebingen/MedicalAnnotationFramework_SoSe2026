@@ -3,3 +3,7 @@ Pillow
 PySide6
 pytest
 flake8
+pandas
+h5py
+json
+shiboken6

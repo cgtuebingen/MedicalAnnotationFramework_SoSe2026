@@ -461,6 +461,7 @@ class SQLiteDatabase(QObject):
                         VALUES (:modality, :file, :patient, :shape, :label)""", entry)
     def update_image_gene_expression(self, image_name: str, gene_expression: list):
             """
+            TODO NOT FINISHED just copied from annotations
             updates the gene_expression associated with a given image
             :param image_name: the image to be updated
             :param gene_expression: [scalefactor, spots, cluster, matrix, isGeneSelected, gene]
@@ -472,8 +473,8 @@ class SQLiteDatabase(QObject):
                 self.cursor.execute("""DELETE FROM gene_expression WHERE modality = ?
                                     AND file = ?""", (modality, file))
     
-                # add new, updated list of annotations
-                for entry in entries:
+                # add new, updated list of gene_expression
+                for entry in gene_expression:
                     self.cursor.execute("""INSERT INTO gene_expression (modality, file, patient, shape, label) 
                         VALUES (:modality, :file, :patient, :shape, :label)""", entry)
 
