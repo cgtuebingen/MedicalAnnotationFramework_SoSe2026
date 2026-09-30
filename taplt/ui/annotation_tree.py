@@ -34,9 +34,12 @@ class AnnotationTree(QTreeWidget):
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setStyleSheet(get_list_widget_stylesheet())
         self.setHeaderLabels(["Annotation", "Your notes"])
+        self.header().setStretchLastSection(False)
+        self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
         self.top = TreeWidgetItem(["Annotations", ""])
         self.addTopLevelItem(self.top)
+        self.top.setExpanded(True)
         self.clicked.connect(self.handle_click)
         self.itemChanged.connect(self.handle_item_changed)
         self.ignore_selection = False

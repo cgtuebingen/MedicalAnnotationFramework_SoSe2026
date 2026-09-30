@@ -26,6 +26,13 @@ CREATE_ANNOTATIONS_TABLE = """
     FOREIGN KEY (patient) REFERENCES patients(uid),
     FOREIGN KEY (label) REFERENCES labels(uid));"""
 
+CREATE_GENE_EXPRESSION_TABLE = """
+    CREATE TABLE IF NOT EXISTS gene_expression (
+    uid INTEGER PRIMARY KEY,
+    modality INTEGER NOT NULL,
+    file INTEGER NOT NULL,
+    patient INTEGER NOT NULL;"""
+
 CREATE_VIDEOS_TABLE = """
     CREATE TABLE IF NOT EXISTS videos (
     uid INTEGER PRIMARY KEY,
@@ -95,6 +102,9 @@ class SQLiteDatabase(QObject):
         self.file_tables = FILE_TABLES
         self.is_initialized = False
         self.database_path = "none"
+        self.connection = None
+        self.cursor = None
+        self.settings = None
 
     def add_annotation(self, modality: int, file: int, patient: int, shape: bytes, label: int):
         """ adds an entry to the annotation table using the parameter values"""
@@ -406,7 +416,7 @@ class SQLiteDatabase(QObject):
             content = self.cursor.execute("SELECT * FROM {}".format(table_name)).fetchall()
         self.sPreviewDatabase.emit(headers, content)
 
-    def save(self, current_labels: list, img_idx: int):
+    def save(self, current_labels: list, gene_expression:list, img_idx: int):
         files = self.get_images()
         files += self.get_videos()
         files += self.get_slides()
@@ -418,6 +428,7 @@ class SQLiteDatabase(QObject):
                 self.add_label(label_class)
                 entries.append(self.create_annotation_entry(file, label_dict, label_class))
             self.update_image_annotations(image_name=file, entries=entries)
+            self.update_image_gene_expression(image_name=file, entries=gene_expression)
         self.update_gui(img_idx)
 
     def send_import_info(self):
@@ -432,22 +443,40 @@ class SQLiteDatabase(QObject):
         self.sImportLabelTable.emit()
 
     def update_image_annotations(self, image_name: str, entries: list):
-        """
-        updates the annotations associated with a given image
-        :param image_name: the image to be updated
-        :param entries: list of dictionaries representing the annotation entries
-        """
-        with self.connection:
-
-            # delete all currently stored annotations for the image
-            modality, file = self.get_uids_from_filename(image_name)
-            self.cursor.execute("""DELETE FROM annotations WHERE modality = ?
-                                AND file = ?""", (modality, file))
-
-            # add new, updated list of annotations
-            for entry in entries:
-                self.cursor.execute("""INSERT INTO annotations (modality, file, patient, shape, label) 
-                    VALUES (:modality, :file, :patient, :shape, :label)""", entry)
+            """
+            updates the annotations associated with a given image
+            :param image_name: the image to be updated
+            :param entries: list of dictionaries representing the annotation entries
+            """
+            with self.connection:
+    
+                # delete all currently stored annotations for the image
+                modality, file = self.get_uids_from_filename(image_name)
+                self.cursor.execute("""DELETE FROM annotations WHERE modality = ?
+                                    AND file = ?""", (modality, file))
+    
+                # add new, updated list of annotations
+                for entry in entries:
+                    self.cursor.execute("""INSERT INTO annotations (modality, file, patient, shape, label) 
+                        VALUES (:modality, :file, :patient, :shape, :label)""", entry)
+    def update_image_gene_expression(self, image_name: str, gene_expression: list):
+            """
+            TODO NOT FINISHED just copied from annotations
+            updates the gene_expression associated with a given image
+            :param image_name: the image to be updated
+            :param gene_expression: [scalefactor, spots, cluster, matrix, isGeneSelected, gene]
+            """
+            with self.connection:
+    
+                # delete all currently stored annotations for the image
+                modality, file = self.get_uids_from_filename(image_name)
+                self.cursor.execute("""DELETE FROM gene_expression WHERE modality = ?
+                                    AND file = ?""", (modality, file))
+    
+                # add new, updated list of gene_expression
+                for entry in gene_expression:
+                    self.cursor.execute("""INSERT INTO gene_expression (modality, file, patient, shape, label) 
+                        VALUES (:modality, :file, :patient, :shape, :label)""", entry)
 
     def update_gui(self, img_idx: int = 0):
         """gathers all information about the project and updates the database"""
