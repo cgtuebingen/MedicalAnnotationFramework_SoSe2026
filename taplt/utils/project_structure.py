@@ -39,9 +39,10 @@ def create_project_structure(project_path: str):
         os.makedirs(project_path + file_dir)
 
 
-def modality(filepath: str) -> Modality:
+def modality(filepath: str|None) -> Modality:
     """This method uses the 'filetype' library to detect the type of the given file
     returns: 'video', 'image' or 'slide'"""
+    if filepath == None: raise Exception(f"No file given. None")
     ext = os.path.splitext(filepath)[1].lower()  # e.g. ".jpg"
     if ext == '.mp4':
         return Modality.video

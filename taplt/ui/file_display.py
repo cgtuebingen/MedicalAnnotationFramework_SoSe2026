@@ -7,6 +7,7 @@ from taplt.media_viewing_widgets.widgets.image_viewer import ImageViewer
 from taplt.media_viewing_widgets.widgets.slide_viewer import SlideView
 
 from taplt.ui.annotation_group import AnnotationGroup
+from taplt.ui.gen_expression import GenExpression
 from taplt.ui.shape import Shape
 from taplt.ui.ruler import RulerWidget, read_image_metadata, read_slide_metadata
 from taplt.utils.qt import get_icon
@@ -37,6 +38,7 @@ class CenterDisplayWidget(QWidget):
         # main components of the display
         self.scene = QGraphicsScene()
         self.image_viewer = ImageViewer(self.scene)
+        self.current_slide = None
 
         self.video_player = VideoPlayer(self.scene)
         self.video_label = QLabel()
@@ -50,6 +52,8 @@ class CenterDisplayWidget(QWidget):
         self.scene.addItem(self.pixmap)
         self.annotations = AnnotationGroup()
         self.scene.addItem(self.annotations)
+        self.gen_expressions = GenExpression(QPoint(500,500),10)
+        self.scene.addItem(self.gen_expressions)
         self.annotations.sToolTip.connect(self.sDrawingTooltip.emit)
 
         # QLabel displaying the patient's id/name/alias
@@ -103,7 +107,21 @@ class CenterDisplayWidget(QWidget):
         self.sZoomChanged.connect(self.top_ruler.set_zoom)
         self.sZoomChanged.connect(self.left_ruler.set_zoom)
 
-        self.slide_viewer.sViewChanged.connect(self.annotations.update_shape_positions)
+        def update_wsi_positions(self):
+            def run(*args, **kwargs):
+                self.annotations.update_shape_positions(*args, **kwargs)
+                self.gen_expressions.update_shape_positions(*args, **kwargs)
+            return run
+        self.slide_viewer.sViewChanged.connect(update_wsi_positions(self))
+
+        self.gen_expressions.sRequestWSIZoomData.connect(self.updateWSIZoomGenExpressionScaling)
+    def updateWSIZoomGenExpressionScaling(self):
+        try:
+            file_type = modality(self.current_slide)
+            if file_type == Modality.slide:
+                self.slide_viewer.emit_view_params()
+        except Exception:
+            pass
     
     def on_enter_pressed(self):
             if self.annotations.pending_shapes:          
@@ -113,6 +131,8 @@ class CenterDisplayWidget(QWidget):
         if self.annotations.mode == AnnotationGroup.AnnotationMode.DRAW:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.annotations.create_shape(event)
+        else: 
+            pass#self.gen_expressions.create_shape(event)# DEBUG
         event.accept()
 
     def clear(self):
@@ -156,6 +176,9 @@ class CenterDisplayWidget(QWidget):
                   for _label in labels]
 
         self.annotations.update_annotations(labels)
+        gene_expression_data = ...,...,...,...,...,...
+        scalefactor, spots, cluster, matrix, isGeneSelected, gene = gene_expression_data
+        self.gen_expressions.update_gene_expression(scalefactor, spots, cluster, matrix, isGeneSelected, gene)
         self.hide_button.raise_()
 
         self.switch_to_modality(filepath)
@@ -178,8 +201,10 @@ class CenterDisplayWidget(QWidget):
     @Slot(QGraphicsPixmapItem)
     def set_pixmap_to_slide(self, pixmap_item):
         self.scene.removeItem(self.annotations)
+        self.scene.removeItem(self.gen_expressions)
         self.scene.addItem(pixmap_item)
         self.scene.addItem(self.annotations)
+        self.scene.addItem(self.gen_expressions)
 
     def set_ruler_context_from_file(self, filepath: str):
         """Sets the measurement context of the rulers based on the file type and its metadata."""

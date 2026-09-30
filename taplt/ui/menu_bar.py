@@ -158,7 +158,7 @@ class MenuBar(QMenuBar):
         self.nav_widget.layout().addWidget(redo_button)
 
         self.setCornerWidget(self.nav_widget, Qt.Corner.TopRightCorner)
-
+        
         self.enable_tools(["New Project", "Open Project", "Quit Program", "Example Project"])
 
     def enable_tools(self, tools: List[str] = None):

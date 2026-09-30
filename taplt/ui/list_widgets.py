@@ -398,6 +398,126 @@ def normalize_setting_value(value):
                 return False
         return bool(value)
 
+class GenExpressionWidget(QWidget):
+    """Controls gene-expression overlay visibility, loading, and gene/cluster coloring."""
+    sLoadRequested = Signal()
+    sLoadClustersRequested = Signal()
+    sToggled = Signal(bool)
+    sGeneSelected = Signal(int)
+    sClusterSelected = Signal(str)
+    sGeneHeaderClicked = Signal()
+    sClusterHeaderClicked = Signal()
+
+    def __init__(self):
+        super(GenExpressionWidget, self).__init__()
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(4)
+
+        headbuttons = QHBoxLayout()
+        self.layout().addLayout(headbuttons)
+        self.some_checkbox = QCheckBox("Enable")
+        self.some_checkbox.toggled.connect(self.sToggled.emit)
+        headbuttons.addWidget(self.some_checkbox)
+
+        self.load_button = QPushButton("Load")
+        self.load_button.clicked.connect(self.sLoadRequested.emit)
+        headbuttons.addWidget(self.load_button)
+
+        self.load_clusters_button = QPushButton("Cluster")
+        self.load_clusters_button.clicked.connect(self.sLoadClustersRequested.emit)
+        headbuttons.addWidget(self.load_clusters_button)
+
+        self.gene_filter = QLineEdit()
+        self.gene_filter.setPlaceholderText("Filter genes")
+        self.gene_filter.textChanged.connect(self._filter_genes)
+        self.layout().addWidget(self.gene_filter)
+
+        tables = QHBoxLayout()
+        self.genes_table = QTableWidget(0, 1)
+        self.genes_table.setHorizontalHeaderLabels(["Genes"])
+        self.genes_table.horizontalHeader().sectionClicked.connect(self.clicked_on_gene_header)
+        self.genes_table.topLevelWidget
+        self.genes_table.verticalHeader().setVisible(False)
+        self.genes_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.genes_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        QAbstractItemView.SelectionMode.NoSelection
+        self.genes_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.genes_table.horizontalHeader().setStretchLastSection(True)
+        self.genes_table.itemSelectionChanged.connect(self._on_gene_selected)
+
+        self.clusters_table = QTableWidget(0, 1)
+        self.clusters_table.setHorizontalHeaderLabels(["Clusters"])
+        self.clusters_table.horizontalHeader().sectionClicked.connect(self.clicked_on_cluster_header)
+        self.clusters_table.verticalHeader().setVisible(False)
+        self.clusters_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.clusters_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.clusters_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.clusters_table.horizontalHeader().setStretchLastSection(True)
+        self.clusters_table.itemSelectionChanged.connect(self._on_cluster_selected)
+
+        tables.addWidget(self.genes_table)
+        tables.addWidget(self.clusters_table)
+        self.layout().addLayout(tables)
+
+    def set_checked(self, checked: bool):
+        was_checked = self.some_checkbox.isChecked()
+        self.some_checkbox.blockSignals(True)
+        self.some_checkbox.setChecked(checked)
+        self.some_checkbox.blockSignals(False)
+        if was_checked != checked:
+            self.sToggled.emit(checked)
+
+    def set_genes(self, gene_names: list):
+        self.genes_table.blockSignals(True)
+        self.genes_table.setRowCount(len(gene_names))
+        for row, name in enumerate(gene_names):
+            item = QTableWidgetItem(str(name))
+            item.setData(Qt.ItemDataRole.UserRole, row)
+            self.genes_table.setItem(row, 0, item)
+        self.genes_table.blockSignals(False)
+        self._filter_genes(self.gene_filter.text())
+
+    def set_clusters(self, cluster_ids: list):
+        self.clusters_table.blockSignals(True)
+        self.clusters_table.setRowCount(len(cluster_ids))
+        for row, name in enumerate(cluster_ids):
+            self.clusters_table.setItem(row, 0, QTableWidgetItem(str(name)))
+        self.clusters_table.blockSignals(False)
+
+    def _filter_genes(self, text: str):
+        needle = text.lower()
+        for row in range(self.genes_table.rowCount()):
+            item = self.genes_table.item(row, 0)
+            visible = (not needle) or (item is not None and needle in item.text().lower())
+            self.genes_table.setRowHidden(row, not visible)
+
+    def _on_gene_selected(self):
+        items = self.genes_table.selectedItems()
+        if not items:
+            return
+        gene_index = items[0].data(Qt.ItemDataRole.UserRole)
+        if gene_index is not None:
+            self.sGeneSelected.emit(int(gene_index))
+            self.clusters_table.clearSelection()
+
+    def _on_cluster_selected(self):
+        items = self.clusters_table.selectedItems()
+        if not items:
+            return
+        self.sClusterSelected.emit(items[0].text())
+        self.genes_table.clearSelection()
+
+    def refresh_theme(self):
+        """no theme-dependent styling, just for future proofing"""
+        pass
+    def clicked_on_gene_header(self):
+        self.sGeneHeaderClicked.emit()
+
+    def clicked_on_cluster_header(self):
+        self.sClusterHeaderClicked.emit()
+
+
 class SettingList(QListWidget):
     def __init__(self, settings):
         super(SettingList, self).__init__()
@@ -407,7 +527,6 @@ class SettingList(QListWidget):
             name, value, hint = setting
             if value in ["True", "true", "1"]: value = True
             elif value in ["False", "false", "0"]: value = False
-            else: return
             if isinstance(value, bool):
                 item = QListWidgetItem(name)
                 checked = Qt.CheckState.Checked if value else Qt.CheckState.Unchecked
