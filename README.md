@@ -82,6 +82,15 @@ by selection you can see the spatial occurences
 7. Load _Cluster CSV_
 8. Choose cluster to display distribution of spots into cluster
 
+#### What spatial transcriptomics data works?
+Needed files are Scaling JSON, Tissue_positions CSV, H5 Matrix (Genes x Barcodes), Cluster CSV (optional)\
+Examples can be found here:\
+https://www.10xgenomics.com/ \
+Product: Spatial Gene Expression\
+Software: Space Ranger\
+Pipeline: 2.0.0\
+
+
 ### Database
 Every time you save your changes, the annotations will be stored in the database. 
 Click "Macros -> Preview Database" to preview the current version of the database and see how it fills up with every new annotation.
@@ -153,6 +162,20 @@ conda activate taplt
 pip install .  # add -e to use the cloned repository as the source for the package
 python download_openslide.py
 ```
+## How could the project be continued
+#### AI Integration
+- Export data for ML usage
+- Automatically recognize elements 
+	
+#### Features
+- Patient data
+- Video annotation
+
+#### Software Quality
+- Small bug fixes (saving, switching wsi – images...)
+- Crash of application on .tif files after zooming
+- Add more pytests
+
 
 ## Acknowledgement
 This project was ported from its original creation by Nico Lösch at [segmentation_utils](https://github.com/nicoloesch/segmentation_utils), which was inspired by [labelme](https://github.com/wkentaro/labelme "Labelme Github").
